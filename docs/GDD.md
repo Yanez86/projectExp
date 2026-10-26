@@ -27,6 +27,8 @@ linee di produzione e vende alle città sparse sulla mappa.
   primo è **Unità**: l'elenco delle unità della gilda, con il mestiere e cosa stanno facendo
   (ferme, in viaggio, al lavoro); toccandone una la si seleziona e la si comanda dalla sua scheda.
   Poi la **Sede** (monete, magazzino, laboratori, avamposti) e le **Opzioni**.
+  In alto a destra, in colonna, le risorse della gilda: solo icona e quantità, prima le monete
+  e poi le materie che ha in magazzino o che i suoi avamposti e laboratori muovono.
 
 ## 3. Il ciclo di gioco
 

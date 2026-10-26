@@ -6,7 +6,7 @@
   import { daylight } from "../lib/map/daylight";
   import Token from "./Token.svelte";
 
-  /** Il menu a sinistra: l'ora, le monete e le icone che aprono i pannelli. */
+  /** Il menu a sinistra: l'ora e le icone che aprono i pannelli. */
   let { onZoom }: { onZoom: (steps: number) => void } = $props();
 
   let gameNow = $derived(game.world ? gameTimeAt(game.world.state.clock, game.now) : undefined);
@@ -14,10 +14,6 @@
     if (gameNow === undefined) return undefined;
     const { day, hours, minutes } = calendar(gameNow);
     return { day, text: `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`, night: daylight(gameNow).night };
-  });
-  let gold = $derived.by(() => {
-    void game.version;
-    return game.world?.state.guild.gold;
   });
   let units = $derived.by(() => {
     void game.version;
@@ -36,12 +32,6 @@
       <Token name={time.night ? "ui_moon" : "ui_sun"} scale={2} />
       <span class="time">{time.text}</span>
       <span class="small">{i18n.t("clock.day", { day: time.day })}</span>
-    </div>
-  {/if}
-  {#if gold !== undefined}
-    <div class="gold" title={i18n.t("gold", { n: gold })}>
-      <Token name="coin" scale={1} />
-      <span>{gold}</span>
     </div>
   {/if}
 
@@ -90,27 +80,18 @@
     scrollbar-width: none;
   }
 
-  .clock,
-  .gold {
+  .clock {
     display: flex;
     flex-direction: column;
     align-items: center;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--panel-border);
     font-variant-numeric: tabular-nums;
   }
 
   .time {
     font-size: 0.85rem;
     font-weight: 600;
-  }
-
-  .gold {
-    flex-direction: row;
-    justify-content: center;
-    gap: 3px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    padding-bottom: 6px;
-    border-bottom: 1px solid var(--panel-border);
   }
 
   .small {

@@ -6,6 +6,7 @@
   import GuildPanel from "./components/GuildPanel.svelte";
   import OptionsPanel from "./components/OptionsPanel.svelte";
   import Rail from "./components/Rail.svelte";
+  import Resources from "./components/Resources.svelte";
   import Toasts from "./components/Toasts.svelte";
   import UnitsPanel from "./components/UnitsPanel.svelte";
   import { game } from "./lib/game.svelte";
@@ -134,6 +135,7 @@
     </Drawer>
   {/if}
   <div class="stage">
+    <div class="corner"><Resources /></div>
     {#if game.selectedId !== undefined || game.selectedHex}
       <ContextPanel />
     {/if}
@@ -173,12 +175,26 @@
   }
 
   .stage {
+    position: relative;
     flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
     align-items: flex-start;
+  }
+
+  /* In alto a destra, le risorse; la scheda della selezione, se le raggiunge, ci passa sopra. */
+  .corner {
+    position: absolute;
+    top: 0;
+    right: 0;
+    max-height: 100%;
+    display: flex;
+  }
+
+  .stage :global(> section) {
+    z-index: 1;
   }
 
   .error {
