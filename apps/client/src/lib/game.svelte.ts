@@ -117,7 +117,10 @@ class Game {
     let reveal: Hex | undefined;
     for (const n of notices) {
       if (n.kind === "revealed") reveal = n.origin;
-      else {
+      else if (n.kind === "discovered") {
+        const place = this.world?.map.places.find((p) => p.id === n.placeId);
+        if (place) this.toast("notice.discovered", { name: place.name, kind: `place.${place.kind}` });
+      } else {
         const c = this.world?.state.characters.find((x) => x.id === n.characterId);
         if (c) this.toast(n.kind === "arrived" ? "notice.arrived" : "notice.blocked", { name: c.name, gender: c.gender });
       }

@@ -10,7 +10,7 @@ function plainsMap(): { map: WorldMap; viewer: Hex } {
   const size = 15;
   const biomes = new Uint8Array(size * size).fill(biomeIndex("plains"));
   const viewer = offsetToHex(7, 7);
-  return { map: { seed: "s", width: size, height: size, biomes, variants: new Uint8Array(size * size), start: viewer }, viewer };
+  return { map: { seed: "s", width: size, height: size, biomes, variants: new Uint8Array(size * size), start: viewer, places: [] }, viewer };
 }
 
 function set(map: WorldMap, h: Hex, biome: BiomeId): void {

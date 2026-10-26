@@ -63,5 +63,16 @@
   "debug.ambience": "Uccelli e ombre di nuvole",
   "debug.skip": "Avanti di {hours} ore",
   "error.title": "Il gioco non è partito",
-  "error.reload": "Ricarica"
+  "error.reload": "Ricarica",
+  "place.town": "Cittadina",
+  "place.town.about": "Un borgo di mercanti e artigiani. Qui la gilda potrà vendere le sue merci.",
+  "place.castle": "Castello",
+  "place.castle.about": "La rocca del signore della regione: da qui partiranno incarichi e permessi.",
+  "place.market": "Mercato",
+  "place.market.about": "Bancarelle a un incrocio di strade: si comprano materie prime e si fanno affari.",
+  "place.wizard_tower": "Torre del mago",
+  "place.wizard_tower.about": "Un mago solitario studia le stelle. Conosce segreti utili alle ricerche della gilda.",
+  "place.dungeon": "Ingresso di un dungeon",
+  "place.dungeon.about": "Gradini che scendono nel buio. Serviranno mercenari per scoprire cosa nasconde.",
+  "notice.discovered": "Scoperto: {name} ({kind})."
 }

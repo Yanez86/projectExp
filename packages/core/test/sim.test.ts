@@ -3,6 +3,7 @@ import { biomeIndex, type BiomeId } from "../src/content/biomes";
 import { BASE_STEP_MS, stepDuration } from "../src/content/movement";
 import { hex, hexEquals, offsetToHex, type Hex } from "../src/hex";
 import { FOG_UNEXPLORED, createFog } from "../src/map/fog";
+import type { Place } from "../src/map/places";
 import { biomeIdAt, type WorldMap } from "../src/map/world";
 import {
   advance,
@@ -20,12 +21,12 @@ import { START_TIME, calendar, gameTimeAt, type Character, type World } from "..
 const LEGEND: Record<string, BiomeId> = { ".": "plains", "~": "shallow_water", f: "forest", "^": "mountains" };
 
 /** Un mondo disegnato a mano: una riga di testo per riga di esagoni. */
-function worldFrom(rows: string[], start: Hex): World {
+function worldFrom(rows: string[], start: Hex, places: Place[] = []): World {
   const height = rows.length;
   const width = rows[0]!.length;
   const biomes = new Uint8Array(width * height);
   rows.forEach((row, r) => [...row].forEach((ch, c) => (biomes[r * width + c] = biomeIndex(LEGEND[ch]!))));
-  const map: WorldMap = { seed: "hand", width, height, biomes, variants: new Uint8Array(width * height), start };
+  const map: WorldMap = { seed: "hand", width, height, biomes, variants: new Uint8Array(width * height), start, places };
   const character: Character = {
     id: 1,
     name: "Folio",
@@ -116,6 +117,16 @@ describe("movimento", () => {
       ok: false,
       reason: "unreachable",
     });
+  });
+
+  it("avvisa quando scopre un luogo di interesse", () => {
+    const place: Place = { id: 7, kind: "town", hex: offsetToHex(10, 0), name: "Valemir" };
+    const world = worldFrom(["............"], offsetToHex(0, 0), [place]);
+    applyCommand(world, { kind: "move", characterId: 1, target: offsetToHex(6, 0) });
+    const notices = advance(world, FAR);
+    expect(notices.filter((n) => n.kind === "discovered")).toEqual([
+      expect.objectContaining({ kind: "discovered", placeId: 7 }),
+    ]);
   });
 
   it("finisce il passo in corso prima di fermarsi", () => {

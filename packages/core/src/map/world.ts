@@ -1,5 +1,6 @@
 import { BIOMES, BIOME_IDS, type Biome, type BiomeId } from "../content/biomes";
-import { hexToOffset, offsetToHex, type Hex } from "../hex";
+import { hexEquals, hexToOffset, offsetToHex, type Hex } from "../hex";
+import type { Place } from "./places";
 
 /** La mappa di un round: un rettangolo di esagoni a righe sfalsate (vedi `offsetToHex`). */
 export interface WorldMap {
@@ -12,6 +13,12 @@ export interface WorldMap {
   readonly variants: Uint8Array;
   /** Dove parte la gilda del giocatore. */
   readonly start: Hex;
+  /** I luoghi di interesse: cittadine, mercati, torri, dungeon, castelli. */
+  readonly places: readonly Place[];
+}
+
+export function placeAt(map: WorldMap, h: Hex): Place | undefined {
+  return map.places.find((p) => hexEquals(p.hex, h));
 }
 
 export function inBounds(map: WorldMap, h: Hex): boolean {

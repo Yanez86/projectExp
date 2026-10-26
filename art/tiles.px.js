@@ -25,6 +25,9 @@ pal({
   i: "#ecdcb8", I: "#c9b48e", R: "#c0473a", T: "#8a2f33", t: "#e2735a", // sede: intonaco, tetto
   P: "#d0703e", Q: "#94462a",                                           // terracotta
   H: "#e6b892", V: "#b88466",                                           // pelle dei Lumacai
+  "1": "#9a6ad8", "2": "#5a3a98",                                       // tetto del mago
+  "4": "#ff9a3a",                                                       // fiamma (si accende di notte)
+  "6": "#283048",                                                       // finestra (si accende di notte)
   F: "#0c142c5c",                                                       // ombra (trasparente)
   D: "#ffb44a40",                                                       // alone di luce (trasparente)
 })
@@ -427,6 +430,154 @@ for (const [biome, variants] of Object.entries(RELIEF)) {
   variants.forEach((things, v) => sprite(`${biome}_top_${v}`, { w: S, h: S + TOP }, ...withShadows(things)))
 }
 
+// ---------------------------------------------------------------- luoghi di interesse
+
+// Ogni luogo è disegnato sulla tela del rilievo (32×48, l'esagono nelle ultime 32 righe). Le
+// finestre ("6") e le fiamme ("4") si accendono di notte: la versione `_glow` tiene solo loro, più
+// un alone, e il gioco la mostra sopra la mappa quando fa buio.
+
+sprite("_yard", { w: 26, h: 10, pivot: "center" }, (c) => {
+  for (let y = 0; y < 10; y++) for (let x = 0; x < 26; x++) {
+    const nx = (x + 0.5 - 13) / 13, ny = (y + 0.5 - 5) / 5
+    const d = nx * nx + ny * ny
+    if (d < 0.7 || (d < 1 && bayer(x, y) < (1 - d) * 2.5)) c.px(x, y, hash(x, y + 3) < 0.15 ? "E" : "e")
+  }
+})
+
+sprite("_house", { outline: "k", pivot: "bottom" }, `
+  ...RRR...
+  ..RRRRT..
+  .RtRRRTT.
+  RtRRRRTTT
+  .iiiiiII.
+  .i6iioII.
+  .iiiioII.
+  .SSSSSSS.`)
+sprite("_house_b", { base: "_house", swap: { R: "e", T: "E", t: "a" } })
+sprite("_belltower", { outline: "k", pivot: "bottom" }, `
+  ..T..
+  .TTT.
+  TtTTT
+  .sSK.
+  .s6K.
+  .sSK.
+  .sSK.
+  ssSKK`)
+sprite("_stall", { outline: "k", pivot: "bottom" }, `
+  rprprprpr
+  rprprprpr
+  .o.....o.
+  .o.....o.
+  .OyOgOrO.
+  .OOOOOOO.`)
+sprite("_stall_b", { base: "_stall", swap: { r: "b" } })
+sprite("_stall_y", { base: "_stall", swap: { r: "y" } })
+sprite("_crate", { outline: "k", pivot: "bottom" }, `
+  oOo
+  OoO`)
+sprite("_banner", { pivot: "bottom" }, `
+  orrr
+  orrR
+  orR.
+  o...
+  o...
+  o...
+  O...`)
+
+// La torre del mago: un cilindro di pietra, cappello a cono viola con una stella in cima.
+sprite("_wizard_tower", { w: 13, h: 31, outline: "n", pivot: "bottom" }, (c) => {
+  for (let y = 1; y < 10; y++) {
+    const half = Math.round(y * 0.62)
+    for (let x = 6 - half; x <= 6 + half; x++) c.px(x, y, x < 6 + Math.round(half * 0.3) ? "1" : "2")
+  }
+  c.px(6, 0, "y")
+  const shade = ["s", "s", "S", "S", "S", "K", "K"]
+  for (let y = 10; y < 27; y++) for (let i = 0; i < 7; i++) {
+    const x = 3 + i
+    let k = shade[i]
+    if (y % 3 === 0 && (x + Math.floor(y / 3)) % 2 === 0) k = i < 5 ? "S" : "n"
+    c.px(x, y, k)
+  }
+  for (let y = 27; y < 31; y++) for (let x = 2; x < 11; x++) c.px(x, y, x < 7 ? "s" : x < 9 ? "S" : "K")
+  c.rect(5, 13, 1, 2, "6"); c.rect(7, 19, 1, 2, "6"); c.rect(5, 23, 1, 2, "6")
+  c.rect(5, 27, 2, 4, "o"); c.px(6, 28, "O")
+})
+
+// L'ingresso di un dungeon: un'altura di roccia con un arco scuro, gradini e due torce.
+sprite("_dungeon", { w: 24, h: 15, outline: "n", pivot: "bottom" }, (c) => {
+  for (let x = 0; x < 24; x++) {
+    const nx = (x + 0.5 - 12) / 12
+    const top = Math.round(14 - (1 - nx * nx) * 11 + (hash(x, 9) - 0.5) * 1.5)
+    for (let y = Math.max(0, top); y < 15; y++) c.px(x, y, x < 9 ? "s" : x < 16 ? "S" : "K")
+  }
+  for (let y = 7; y < 15; y++) for (let x = 7; x < 17; x++) {
+    const nx = (x + 0.5 - 12) / 5, ny = (y + 0.5 - 15) / 8
+    const d = nx * nx + ny * ny
+    if (d < 0.62) c.px(x, y, y > 11 && y % 2 === 0 ? "n" : "k")
+    else if (d < 1) c.px(x, y, (x + y) % 3 === 0 ? "S" : "s")
+  }
+  for (const x of [5, 18]) {
+    c.px(x, 6, "y"); c.px(x, 7, "4"); c.vline(x, 8, 3, "o")
+  }
+})
+
+// Il castello: un mastio con la bandiera, due torri con il tetto a punta e le mura con la porta.
+sprite("_castle", { w: 28, h: 25, outline: "k", pivot: "bottom" }, (c) => {
+  const stone = (x, x0, x1) => (x - x0 < (x1 - x0) * 0.45 ? "s" : x - x0 < (x1 - x0) * 0.75 ? "S" : "K")
+  // Mastio.
+  for (let y = 6; y < 19; y++) for (let x = 9; x < 19; x++) c.px(x, y, stone(x, 9, 19))
+  for (let x = 9; x < 19; x += 2) c.px(x, 5, stone(x, 9, 19))
+  c.rect(11, 9, 1, 2, "6"); c.rect(16, 9, 1, 2, "6"); c.rect(13, 13, 2, 2, "6")
+  c.vline(14, 0, 5, "O"); c.rect(15, 0, 3, 2, "r"); c.px(17, 1, "R")
+  // Torri.
+  for (const [x0, x1] of [[2, 7], [21, 26]]) {
+    for (let y = 9; y < 25; y++) for (let x = x0; x < x1; x++) c.px(x, y, stone(x, x0, x1))
+    for (let y = 4; y < 9; y++) {
+      const half = Math.round((y - 3) * 0.6)
+      const cx = (x0 + x1 - 1) / 2
+      for (let x = Math.floor(cx - half); x <= Math.ceil(cx + half); x++) c.px(x, y, x < cx ? "R" : "T")
+    }
+    c.rect(x0 + 2, 13, 1, 2, "6")
+  }
+  // Mura con i merli e la porta.
+  for (let y = 17; y < 25; y++) for (let x = 6; x < 22; x++) c.px(x, y, y === 17 && x % 2 === 1 ? "." : stone(x, 6, 22))
+  for (let y = 19; y < 25; y++) for (let x = 12; x < 16; x++) c.px(x, y, y === 19 && (x === 12 || x === 15) ? "S" : "k")
+  c.hline(12, 22, 4, "O")
+})
+
+/** La versione notturna di un luogo: solo finestre e fiamme accese, con un alone. */
+function glowOf(name) {
+  sprite(`${name}_glow`, { base: name }, (c) => {
+    const lights = []
+    for (let y = 0; y < c.h; y++) for (let x = 0; x < c.w; x++) {
+      const k = c.key(x, y)
+      if (k === "6" || k === "4") lights.push([x, y, k])
+    }
+    for (let y = 0; y < c.h; y++) for (let x = 0; x < c.w; x++) c.px(x, y, "_")
+    for (const [x, y] of lights) c.circ(x, y, 2, "D")
+    for (const [x, y, k] of lights) c.px(x, y, k === "6" ? "Y" : "4")
+  })
+}
+
+const PLACES = {
+  town: [["_yard", 16, 37], ["_belltower", 12, 33], ["_house", 21, 35], ["_house_b", 9, 41], ["_house", 21, 43]],
+  market: [["_yard", 16, 37], ["_banner", 16, 33], ["_stall", 10, 36], ["_stall_b", 22, 37], ["_crate", 6, 42], ["_stall_y", 15, 42], ["_crate", 26, 43]],
+  wizard_tower: [["_rock", 8, 42], ["_wizard_tower", 16, 41], ["_rock", 23, 43]],
+  dungeon: [["_dungeon", 16, 41], ["_rock", 6, 43]],
+  castle: [["_yard", 16, 38], ["_castle", 16, 42]],
+}
+Object.assign(SHADOW, {
+  _yard: ["_shadow_xs", 0], _house: ["_shadow_s", 3], _house_b: ["_shadow_s", 3], _belltower: ["_shadow_xs", 2],
+  _stall: ["_shadow_s", 2], _stall_b: ["_shadow_s", 2], _stall_y: ["_shadow_s", 2], _crate: ["_shadow_xs", 1],
+  _banner: ["_shadow_xs", 1], _wizard_tower: ["_shadow_m", 5], _dungeon: ["_shadow_l", 3], _castle: ["_shadow_l", 5],
+})
+for (const [kind, things] of Object.entries(PLACES)) {
+  // Il cortile è terra battuta, senza ombra: va sotto a tutto.
+  const yard = things.filter(([n]) => n === "_yard").map(([n, x, y]) => stamp(n, x, y))
+  sprite(`place_${kind}`, { w: S, h: S + TOP }, ...yard, ...withShadows(things.filter(([n]) => n !== "_yard")))
+  glowOf(`place_${kind}`)
+}
+
 // ---------------------------------------------------------------- transizioni
 
 // Il bioma vicino entra nel bordo con una fascia frastagliata, che sfuma a scacchiera.
@@ -667,5 +818,5 @@ sprite("route_flag", { outline: "k", pivot: "bottom" }, `
 sheet("tiles", [
   "deep_water_*", "shallow_water_*", "plains_*", "forest_*", "hills_*", "mountains_*",
   "swamp_*", "desert_*", "tundra_*", "edge_*", "shore_*", "grid", "select",
-  "cloud_*", "guild*", "char_*", "route_*", "bird*",
+  "cloud_*", "guild*", "char_*", "route_*", "bird*", "place_*",
 ], { pad: 1 })

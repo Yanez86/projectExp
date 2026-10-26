@@ -2,10 +2,11 @@ import { createNoise2D, type NoiseFunction2D } from "simplex-noise";
 import { biomeIndex, type BiomeId } from "../content/biomes";
 import { offsetToHex, type Hex } from "../hex";
 import { createRng, hashSeed, pick, type Rng } from "../rng";
+import { generatePlaces } from "./places";
 import type { WorldMap } from "./world";
 
 /** Da cambiare quando cambia la generazione: lo stesso seed darebbe un'altra mappa. */
-export const MAP_GENERATOR_VERSION = 1;
+export const MAP_GENERATOR_VERSION = 2;
 
 export interface MapOptions {
   readonly seed: string;
@@ -95,7 +96,8 @@ export function generateMap(options: MapOptions): WorldMap {
   }
 
   const start = chooseStart(rng, biomes, width, height);
-  return { seed, width, height, biomes, variants, start };
+  const places = generatePlaces({ width, height, biomes, start }, createRng(hashSeed(`${seed}/places`)));
+  return { seed, width, height, biomes, variants, start, places };
 }
 
 /** Sceglie una pianura nella parte centrale della mappa (in mancanza, una terra qualsiasi). */

@@ -4,6 +4,7 @@ import en from "../locales/en.json";
 import it_ from "../locales/it.json";
 import { BIOME_IDS } from "../src/content/biomes";
 import { ETHNICITY_IDS, JOB_IDS, STAT_IDS } from "../src/content/ethnicities";
+import { PLACE_KINDS } from "../src/content/places";
 import { createTranslator, detectLocale } from "../src/i18n";
 
 const locales: Record<string, Record<string, string>> = { it: it_, en };
@@ -39,6 +40,10 @@ describe("i18n", () => {
     for (const id of ETHNICITY_IDS) expect(it_).toHaveProperty(`ethnicity.${id}`);
     for (const id of JOB_IDS) expect(it_).toHaveProperty(`job.${id}`);
     for (const id of STAT_IDS) expect(it_).toHaveProperty(`stat.${id}`);
+    for (const id of PLACE_KINDS) {
+      expect(it_).toHaveProperty(`place.${id}`);
+      expect(it_).toHaveProperty(`place.${id}.about`);
+    }
   });
 
   it("riconosce la lingua del browser", () => {

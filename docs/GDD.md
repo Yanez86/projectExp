@@ -1,4 +1,4 @@
-# Documento di design (bozza v0.8)
+# Documento di design (bozza v0.9)
 
 > Stato: bozza stabile per partire. I dettagli (luoghi, dungeon, ricette, ricerche) si definiscono
 > tappa per tappa. Il piano tecnico è in [TECH.md](TECH.md).
@@ -65,7 +65,23 @@ linee di produzione e vende alle città sparse sulla mappa.
   foreste (non sopra le montagne). Con Occhio 7 o più si vede una casella in più. La sede vede
   come un personaggio sulla sua casella.
 - [Proposta] La gilda parte con due esploratori: un Cartiglio e uno di un'altra etnia.
-- [Aperto] Quali luoghi di interesse esistono e cosa offrono.
+- [Deciso] Cinque tipi di luoghi di interesse, sparsi sulla mappa e nascosti dalle nuvole finché
+  qualcuno non li vede: **cittadine**, **mercati**, **castelli**, **torri del mago** e
+  **ingressi di dungeon**. Ogni luogo ha un nome generato; quando un personaggio lo scopre arriva
+  un avviso.
+- [Proposta] Cosa offrono (arriva con le prossime tappe):
+  - **cittadina**: compra le merci della gilda, con richieste e prezzi propri (§8);
+  - **mercato**: vende materie prime e permette scambi;
+  - **castello**: il signore della regione dà incarichi e permessi (per esempio per costruire
+    avamposti nelle sue terre);
+  - **torre del mago**: un mago solitario che insegna segreti utili alle ricerche (§9);
+  - **ingresso di un dungeon**: lo esplorano i mercenari (§7).
+- [Proposta] Quanti e dove: una cittadina ogni 240 caselle di terra circa (almeno 3), un mercato
+  ogni 500 (almeno 2), un castello e una torre ogni 700 (almeno uno), un dungeon ogni 300
+  (almeno 2). Le cittadine stanno volentieri vicino all'acqua e in pianura, una non lontano dalla
+  sede; castelli e mercati a qualche casella da una cittadina; le torri lontane da tutto; i
+  dungeon su colline e montagne, più spesso lontano dalla sede. Tutti raggiungibili a piedi dalla
+  sede e mai a meno di 4 caselle da essa.
 
 ## 6. Personaggi, etnie e background
 

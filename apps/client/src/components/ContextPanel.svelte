@@ -7,6 +7,7 @@
     estimateArrival,
     fogAt,
     hexEquals,
+    placeAt,
     previewRoute,
     realDelay,
     type Hex,
@@ -40,6 +41,7 @@
       fogKey: FOG_KEYS[level] as string,
       dim: level === FOG_EXPLORED,
       guild: level !== FOG_UNEXPLORED && hexEquals(h, world.state.guild.hex),
+      place: level === FOG_UNEXPLORED ? undefined : placeAt(world.map, h),
     };
   }
 
@@ -93,9 +95,15 @@
     </dl>
     {#if hexInfo}
       <p class="target" class:dim={hexInfo.dim}>
+        {#if hexInfo.place}
+          {hexInfo.place.name} ({i18n.t(`place.${hexInfo.place.kind}`)}) ·
+        {/if}
         {hexInfo.biome ? i18n.t(`biome.${hexInfo.biome}`) : i18n.t("fog.unexplored")} ·
         {i18n.t("hex.title", { q: hexInfo.hex.q, r: hexInfo.hex.r })}
       </p>
+      {#if hexInfo.place}
+        <p class="about">{i18n.t(`place.${hexInfo.place.kind}.about`)}</p>
+      {/if}
       {#if preview === null}
         <p class="warn">{i18n.t("route.unreachable")}</p>
       {:else if preview?.here}
@@ -110,6 +118,15 @@
     {:else}
       <p class="hint">{i18n.t("hint.send", { gender: character.gender })}</p>
     {/if}
+  {:else if hexInfo?.place}
+    <header>
+      <Token name="place_{hexInfo.place.kind}" scale={1} />
+      <div>
+        <h2>{hexInfo.place.name}</h2>
+        <p>{i18n.t(`place.${hexInfo.place.kind}`)} · {i18n.t(`biome.${hexInfo.biome}`)}</p>
+      </div>
+    </header>
+    <p class="about">{i18n.t(`place.${hexInfo.place.kind}.about`)}</p>
   {:else if hexInfo}
     <h2>{hexInfo.biome ? i18n.t(`biome.${hexInfo.biome}`) : i18n.t("fog.unexplored")}</h2>
     <p class:dim={hexInfo.dim}>
@@ -190,6 +207,11 @@
 
   .accent {
     color: var(--accent);
+  }
+
+  .about {
+    color: var(--text);
+    line-height: 1.35;
   }
 
   .hint {

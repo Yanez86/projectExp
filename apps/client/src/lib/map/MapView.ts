@@ -7,6 +7,7 @@ import {
   hexEquals,
   hexKey,
   hexToOffset,
+  placeAt,
   tileIndex,
   type Fog,
   type Hex,
@@ -52,7 +53,10 @@ interface HexSprites {
   y: number;
   ground: Sprite;
   edges: Sprite[];
+  /** Il rilievo, oppure il luogo di interesse che sorge sulla casella. */
   relief: Sprite | undefined;
+  /** Le luci notturne del luogo, se ce n'è uno. */
+  glow: Sprite | undefined;
   grid: Sprite;
   cloudBase: Sprite;
   cloud: Sprite;
@@ -244,7 +248,13 @@ export class MapView {
       const edges = edgeOverlays(map, h).map((name) => this.addSprite(this.edgeLayer, this.texture(name), x, y + HEX_TOP));
       const grid = this.addSprite(this.gridLayer, gridTexture, x, y + HEX_TOP);
       let relief: Sprite | undefined;
-      if (RELIEF.has(id)) {
+      let glow: Sprite | undefined;
+      const place = placeAt(map, h);
+      if (place) {
+        relief = this.addSprite(this.objectLayer, this.texture(`place_${place.kind}`), x, y);
+        relief.zIndex = row * 2;
+        glow = this.addSprite(this.lights, this.texture(`place_${place.kind}_glow`), x, y);
+      } else if (RELIEF.has(id)) {
         // Terreno e rilievo scelgono la variante da bit diversi dello stesso numero: si combinano.
         relief = this.addSprite(this.objectLayer, this.pick(`${id}_top`, variant >> 3), x, y);
         relief.zIndex = row * 2;
@@ -259,7 +269,7 @@ export class MapView {
       const cloud = this.addSprite(this.cloudLayer, clouds[variant % clouds.length] ?? cloudBaseTexture, cloudX, cloudY);
       cloud.anchor.set(0.5);
       cloud.zIndex = cloudY;
-      this.hexes.push({ x, y, ground, edges, relief, grid, cloudBase, cloud, cloudX, cloudY, phase: (variant / 256) * Math.PI * 2 });
+      this.hexes.push({ x, y, ground, edges, relief, glow, grid, cloudBase, cloud, cloudX, cloudY, phase: (variant / 256) * Math.PI * 2 });
     }
 
     const c = hexCenter(map.start);
@@ -270,6 +280,7 @@ export class MapView {
     this.guild = this.addSprite(this.objectLayer, this.texture("guild"), c.x, c.y + 7);
     this.guild.anchor.set(0.5, 1);
     this.guild.zIndex = guildDepth;
+    // Le luci dei luoghi sono già nel livello delle luci: quelle della sede vanno dopo, sopra.
     this.addSprite(this.lights, this.texture("guild_glow"), c.x, c.y + 7).anchor.set(0.5, 1);
 
     this.selection?.destroy();
@@ -376,6 +387,7 @@ export class MapView {
 
       const mist = state === FOG_EXPLORED;
       if (hs.relief) hs.relief.visible = !covered;
+      if (hs.glow) hs.glow.visible = !covered;
 
       if (covered) {
         this.reveals.delete(i);
@@ -670,6 +682,7 @@ export class MapView {
       hs.ground.culled = culled;
       for (const edge of hs.edges) edge.culled = culled;
       if (hs.relief) hs.relief.culled = culled;
+      if (hs.glow) hs.glow.culled = culled;
       hs.grid.culled = culled;
       hs.cloudBase.culled = culled;
       hs.cloud.culled = culled;

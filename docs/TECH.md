@@ -79,6 +79,15 @@ Il server andrà in `apps/server/`.
 - Ciò che non è esplorato è coperto da un mare di nuvole in pixel art; quando una zona viene
   scoperta, le nuvole si aprono e scivolano via dal punto di scoperta. Le zone esplorate ma fuori
   vista restano scoperte, un po' più scure.
+- Luoghi di interesse (`map/places.ts`, regole in `content/places.ts`): dopo i biomi, una visita
+  in ampiezza trova la terra raggiungibile a piedi dalla sede; per ogni tipo, nell'ordine, si
+  sceglie la casella col punteggio migliore (un po' di caso più le preferenze del tipo) tra quelle
+  dei biomi ammessi, rispettando le distanze minime dalla sede, dagli altri luoghi e dai simili. I
+  nomi nascono da sillabe (`content/names.ts`). Il generatore ha un suo flusso di numeri casuali
+  (`seed/places`), così aggiungere luoghi non cambia i biomi. Nel client il luogo prende il posto
+  del rilievo della casella e ha le sue luci per la notte.
+- Ogni cambio al generatore ne alza la versione (`MAP_GENERATOR_VERSION`, ora 2): i salvataggi
+  vecchi non coincidono più e si comincia una partita nuova.
 - Comandi: trascini per spostarti, rotella o pizzico per lo zoom, tocco per selezionare.
 - Vista con linea di visuale: per ogni casella entro il raggio si traccia la retta di esagoni dal
   punto di vista; le caselle in mezzo possono fermarla (montagne) o lasciarla passare per poco

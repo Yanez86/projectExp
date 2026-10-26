@@ -5,7 +5,13 @@
 
 <div class="toasts" role="status">
   {#each game.toasts as toast (toast.id)}
-    <button type="button" onclick={() => game.dismissToast(toast.id)}>{i18n.t(toast.key, toast.values)}</button>
+    <button type="button" onclick={() => game.dismissToast(toast.id)}>
+      {i18n.t(toast.key, {
+        ...toast.values,
+        // Un valore che è una chiave di testo (il tipo di luogo) si traduce nella lingua corrente.
+        ...(typeof toast.values.kind === "string" ? { kind: i18n.t(toast.values.kind) } : {}),
+      })}
+    </button>
   {/each}
 </div>
 

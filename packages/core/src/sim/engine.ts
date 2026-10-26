@@ -12,7 +12,7 @@ import { visionRange } from "../content/vision";
 import { hexEquals, type Hex } from "../hex";
 import { FOG_UNEXPLORED, createFog, updateVisibility, type VisionSource } from "../map/fog";
 import { generateMap } from "../map/generate";
-import { biomeIdAt, inBounds } from "../map/world";
+import { biomeIdAt, inBounds, tileIndex } from "../map/world";
 import { createRng, hashSeed, pick, randInt, type Rng } from "../rng";
 import { findRoute, knownStepDuration, routeDuration } from "./route";
 import { START_TIME, gameTimeAt, type Character, type GameEvent, type World } from "./state";
@@ -31,7 +31,8 @@ export interface NewWorldOptions {
 export type Notice =
   | { readonly kind: "arrived"; readonly at: number; readonly characterId: number; readonly hex: Hex }
   | { readonly kind: "blocked"; readonly at: number; readonly characterId: number; readonly hex: Hex }
-  | { readonly kind: "revealed"; readonly at: number; readonly origin: Hex; readonly count: number };
+  | { readonly kind: "revealed"; readonly at: number; readonly origin: Hex; readonly count: number }
+  | { readonly kind: "discovered"; readonly at: number; readonly placeId: number };
 
 export type Command =
   | { readonly kind: "move"; readonly characterId: number; readonly target: Hex }
@@ -183,8 +184,14 @@ function arrive(world: World, characterId: number, at: number, notices: Notice[]
   if (!character?.step) return;
   character.hex = character.step.to;
   character.step = null;
+  const hidden = world.map.places.filter((p) => world.state.fog.state[tileIndex(world.map, p.hex)] === FOG_UNEXPLORED);
   const revealed = refreshVisibility(world);
   if (revealed > 0) notices.push({ kind: "revealed", at, origin: character.hex, count: revealed });
+  for (const p of hidden) {
+    if (world.state.fog.state[tileIndex(world.map, p.hex)] !== FOG_UNEXPLORED) {
+      notices.push({ kind: "discovered", at, placeId: p.id });
+    }
+  }
 
   const destination = character.destination;
   if (!destination) return;

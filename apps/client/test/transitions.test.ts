@@ -6,7 +6,7 @@ import { edgeOverlays } from "../src/lib/map/transitions";
 function mapWith(center: BiomeId, around: BiomeId): WorldMap {
   const biomes = new Uint8Array(9).fill(biomeIndex(around));
   biomes[4] = biomeIndex(center);
-  return { seed: "t", width: 3, height: 3, biomes, variants: new Uint8Array(9), start: hex(0, 0) };
+  return { seed: "t", width: 3, height: 3, biomes, variants: new Uint8Array(9), start: hex(0, 0), places: [] };
 }
 
 describe("edgeOverlays", () => {

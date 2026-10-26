@@ -63,5 +63,16 @@
   "debug.ambience": "Birds and cloud shadows",
   "debug.skip": "Skip {hours} hours",
   "error.title": "The game didn't start",
-  "error.reload": "Reload"
+  "error.reload": "Reload",
+  "place.town": "Town",
+  "place.town.about": "A town of traders and craftsfolk. Your guild will be able to sell its goods here.",
+  "place.castle": "Castle",
+  "place.castle.about": "The keep of the region's lord, where contracts and permits will be handed out.",
+  "place.market": "Market",
+  "place.market.about": "Stalls at a crossroads: raw materials for sale and deals to be made.",
+  "place.wizard_tower": "Wizard's tower",
+  "place.wizard_tower.about": "A lonely wizard studies the stars and knows secrets that could help your guild's research.",
+  "place.dungeon": "Dungeon entrance",
+  "place.dungeon.about": "Steps lead down into the dark. It will take mercenaries to find out what it hides.",
+  "notice.discovered": "Discovered: {name} ({kind})."
 }

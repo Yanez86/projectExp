@@ -49,6 +49,10 @@ jobs:
     needs: check
     if: needs.check.outputs.pages == 'true'
     runs-on: ubuntu-latest
+    # Una pubblicazione alla volta: se ne parte un'altra, aspetta la fine di quella in corso.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     permissions:
       pages: write
       id-token: write
