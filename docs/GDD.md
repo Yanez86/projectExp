@@ -1,4 +1,4 @@
-# Documento di design (bozza v0.5)
+# Documento di design (bozza v0.6)
 
 > Stato: bozza in discussione. Niente codice finché questo documento non è stabile.
 >
@@ -45,18 +45,69 @@ linee di produzione e vende alle città sparse sulla mappa.
   vengono mandate alla gilda.
 - [Aperto] Quali luoghi di interesse esistono e cosa offrono.
 
-## 6. Personaggi ed etnie
+## 6. Personaggi, etnie e background
 
-- [Deciso] Le etnie servono alla creazione dei personaggi che poi circolano sulla mappa.
-- [Deciso] Il giocatore assolda personaggi già fatti, non li crea.
-- [Proposta] Quattro mestieri:
-  - **esploratori**: scoprono la mappa e i luoghi di interesse;
-  - **costruttori**: fondano gli avamposti;
-  - **carovanieri**: portano le merci alle città;
-  - **mercenari**: trovano ed esplorano i dungeon.
-- [Proposta] L'etnia dà a ogni personaggio un'affinità con alcuni biomi (si muove ed esplora
-  meglio in certi terreni) e un talento in un mestiere.
-- [Aperto] Quali etnie.
+### Mestieri [Deciso]
+
+Il giocatore assolda personaggi già fatti, non li crea. Quattro mestieri:
+
+- **esploratori**: scoprono la mappa e i luoghi di interesse;
+- **costruttori**: fondano gli avamposti;
+- **carovanieri**: portano le merci alle città;
+- **mercenari**: trovano ed esplorano i dungeon.
+
+### Etnie
+
+- [Deciso] Si parte con tre etnie, fuori dagli schemi classici (niente elfi, nani, orchi).
+- [Deciso] L'etnia dà a ogni personaggio un'affinità con alcuni biomi (si muove ed esplora meglio
+  in certi terreni) e un talento in un mestiere.
+- [Proposta] Le tre etnie:
+  - **Cartigli** (EN: Paperfolk). Nati da mappe dimenticate, fatti di carta piegata: ciò che
+    esplorano si disegna sulla loro pelle. Talento: esploratori. A loro agio in pianure e
+    deserti; temono paludi, pioggia e fuoco.
+  - **Lumacai** (EN: Shellfolk). Portano sulla schiena un guscio che è casa e bottega,
+    ereditato e decorato da generazioni. Lenti ma capienti. Talento: carovanieri. A loro agio
+    in foreste e paludi; nei deserti si seccano.
+  - **Cocciai** (EN: Sherdkin). Persone di terracotta: quando si rompono si riparano con l'oro,
+    e ogni cicatrice dorata è una storia e un tratto in più. Talento: mercenari. A loro agio
+    su colline e montagne; temono l'acqua e il gelo.
+- [Proposta] Alternative:
+  - **Micelidi** (EN: Mycelings): funghi ambulanti che condividono i ricordi tramite spore, a
+    loro agio nel buio dei dungeon.
+  - **Gente di Sale** (EN: Saltborn): cristalli di sale viventi, mercanti nati nei deserti, che
+    la pioggia scioglie.
+
+### Background e "DNA"
+
+- [Deciso] Ogni personaggio ha un background generato a caso, che gli dà colore e costruisce il
+  suo DNA: tratti e statistiche nascono dalla sua storia.
+- [Proposta] La storia si compone di quattro capitoli estratti da tabelle:
+  1. **Origine**: dove è nato. Dà un'affinità di bioma in più.
+  2. **Mestiere precedente**: cosa faceva prima. Dà un bonus a una statistica.
+  3. **Evento segnante**: cosa gli è successo. Dà un tratto.
+  4. **Mania**: un vizio o una fissazione. Dà un piccolo difetto o una stranezza.
+- [Proposta] Cinque statistiche:
+  - **Vigore**: resiste ai pericoli;
+  - **Passo**: velocità sulla mappa;
+  - **Occhio**: trova luoghi e bottino;
+  - **Parlantina**: tratta prezzi e ingaggi;
+  - **Fegato**: affronta i rischi senza tirarsi indietro.
+- [Proposta] Valore di ogni statistica = base dell'etnia + capitoli della storia. Più un
+  personaggio è dotato, più costa ingaggiarlo.
+- [Proposta] La storia continua: viaggi e dungeon aggiungono capitoli nuovi (per i Cocciai,
+  nuove cicatrici d'oro).
+- [Proposta] Il testo si compone da frammenti tradotti in italiano e inglese.
+- Esempi:
+
+  > **Brunilde Sbeccata**, cocciaia, mercenaria. Nata nelle fornaci delle colline rosse. Per
+  > anni buttafuori in una locanda (+Vigore). Caduta in un pozzo, ne è uscita con tre
+  > cicatrici d'oro (tratto *Già rotta una volta*: +Fegato). Conta ad alta voce ogni moneta
+  > (−Parlantina: i mercanti si spazientiscono).
+
+  > **Foglio Settimo**, cartiglio, esploratore. Piegato da una mappa di un regno che non esiste
+  > più. Per vent'anni segnalibro in una biblioteca (+Occhio). Sopravvissuto a un incendio con
+  > un angolo bruciacchiato (tratto *Paura del fuoco*). Corregge le mappe di tutti, anche
+  > quando nessuno gliel'ha chiesto.
 
 ## 7. Mercenari e dungeon
 
@@ -118,5 +169,5 @@ linee di produzione e vende alle città sparse sulla mappa.
 
 ## 15. Domande aperte
 
-1. **Personaggi**: vanno bene i quattro mestieri e l'idea delle affinità del §6?
-2. **Etnie**: quali?
+1. **Etnie**: il trio proposto nel §6 va bene, o ne scambiamo qualcuna con le alternative?
+2. **Background**: vanno bene i quattro capitoli e le cinque statistiche?
