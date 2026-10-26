@@ -1,4 +1,4 @@
-# Documento di design (bozza v0.4)
+# Documento di design (bozza v0.5)
 
 > Stato: bozza in discussione. Niente codice finché questo documento non è stabile.
 >
@@ -48,8 +48,15 @@ linee di produzione e vende alle città sparse sulla mappa.
 ## 6. Personaggi ed etnie
 
 - [Deciso] Le etnie servono alla creazione dei personaggi che poi circolano sulla mappa.
-- [Aperto] Quali personaggi esistono (esploratori, mercenari, carovanieri…), se il giocatore li
-  crea o li assolda già fatti, e cosa cambia da un'etnia all'altra.
+- [Deciso] Il giocatore assolda personaggi già fatti, non li crea.
+- [Proposta] Quattro mestieri:
+  - **esploratori**: scoprono la mappa e i luoghi di interesse;
+  - **costruttori**: fondano gli avamposti;
+  - **carovanieri**: portano le merci alle città;
+  - **mercenari**: trovano ed esplorano i dungeon.
+- [Proposta] L'etnia dà a ogni personaggio un'affinità con alcuni biomi (si muove ed esplora
+  meglio in certi terreni) e un talento in un mestiere.
+- [Aperto] Quali etnie.
 
 ## 7. Mercenari e dungeon
 
@@ -69,22 +76,21 @@ linee di produzione e vende alle città sparse sulla mappa.
 
 - [Deciso] Ci sarà un albero tecnologico.
 - [Deciso] Una ricerca particolare è una delle condizioni di vittoria (§10).
-- [Proposta] Quattro rami, uno per ogni parte del gioco: esplorazione, produzione, commercio,
+- [Deciso] Quattro rami, uno per ogni parte del gioco: esplorazione, produzione, commercio,
   mercenari.
-- [Proposta] Le ricerche costano risorse e tempo reale; alcune richiedono reperti trovati nei
+- [Deciso] Le ricerche costano risorse e tempo reale; alcune richiedono reperti trovati nei
   dungeon o nei luoghi di interesse.
 
 ## 10. Fine del round
 
 - [Deciso] Tre modi per vincere: completare una ricerca particolare, essere la gilda più ricca,
   sconfiggere un drago.
-- [Proposta] Il round finisce quando una gilda completa la ricerca o sconfigge il drago; se non
-  succede entro la scadenza del round, vince la gilda più ricca.
+- [Deciso, punto di partenza] Il round finisce quando una gilda completa la ricerca o sconfigge
+  il drago; se non succede entro la scadenza del round, vince la gilda più ricca.
 
 ## 11. Fazioni
 
-- [Deciso] Ci saranno fazioni.
-- [Aperto] Che ruolo hanno.
+- [Deciso] Rimandate a un'espansione successiva.
 
 ## 12. Riferimenti
 
@@ -99,9 +105,18 @@ linee di produzione e vende alle città sparse sulla mappa.
 - Contenuti (materie, ricette, luoghi, ricerche) definiti come dati; tutti i testi tramite chiavi
   it/en.
 
-## 14. Domande aperte
+## 14. Prime tappe [Proposta]
 
-1. **Personaggi**: quali esistono, il giocatore li crea o li assolda, cosa cambia con l'etnia?
-2. **Fazioni**: che ruolo hanno?
-3. **Albero tecnologico**: vanno bene i quattro rami del §9?
-4. **Fine del round**: va bene la regola proposta nel §10?
+1. Mappa: generazione a esagoni, biomi, nebbia, navigazione con mouse e touch.
+2. Sede della gilda, motore a eventi, primi esploratori sulla mappa.
+3. Avamposti e materie prime; prime linee di produzione.
+4. Città, mercato e carovane.
+5. Mercenari e dungeon.
+6. Albero tecnologico, gilde rivali IA, condizioni di vittoria: primo single player completo.
+7. Multiplayer con lobby.
+8. Espansione: fazioni.
+
+## 15. Domande aperte
+
+1. **Personaggi**: vanno bene i quattro mestieri e l'idea delle affinità del §6?
+2. **Etnie**: quali?
