@@ -1,6 +1,7 @@
-# Documento di design (bozza v0.7)
+# Documento di design (bozza v0.8)
 
-> Stato: bozza in discussione. Niente codice finché questo documento non è stabile.
+> Stato: bozza stabile per partire. I dettagli (luoghi, dungeon, ricette, ricerche) si definiscono
+> tappa per tappa. Il piano tecnico è in [TECH.md](TECH.md).
 >
 > Legenda: **[Deciso]** concordato · **[Proposta]** da confermare · **[Aperto]** da discutere
 
@@ -72,8 +73,8 @@ Il giocatore assolda personaggi già fatti, non li crea. Quattro mestieri:
     e ogni cicatrice dorata è una storia e un tratto in più. Talento: mercenari. A loro agio
     su colline e montagne; temono l'acqua e il gelo.
   - **Micelidi** (EN: Mycelings). Funghi ambulanti che condividono i ricordi tramite spore.
-    Talento [Proposta]: costruttori, perché fanno crescere gli avamposti e il loro micelio li
-    collega sotto terra. A loro agio nelle foreste e nel buio dei dungeon; temono deserti e
+    Talento: costruttori, perché fanno crescere gli avamposti e il loro micelio li collega
+    sotto terra. A loro agio nelle foreste e nel buio dei dungeon; temono deserti e
     gelo.
 - Con quattro etnie e quattro mestieri, ogni etnia ha il suo mestiere di punta; chiunque può
   comunque fare qualsiasi mestiere.
@@ -84,22 +85,22 @@ Il giocatore assolda personaggi già fatti, non li crea. Quattro mestieri:
 
 - [Deciso] Ogni personaggio ha un background generato a caso, che gli dà colore e costruisce il
   suo DNA: tratti e statistiche nascono dalla sua storia.
-- [Proposta] La storia si compone di quattro capitoli estratti da tabelle:
+- [Deciso] La storia si compone di quattro capitoli estratti da tabelle:
   1. **Origine**: dove è nato. Dà un'affinità di bioma in più.
   2. **Mestiere precedente**: cosa faceva prima. Dà un bonus a una statistica.
   3. **Evento segnante**: cosa gli è successo. Dà un tratto.
   4. **Mania**: un vizio o una fissazione. Dà un piccolo difetto o una stranezza.
-- [Proposta] Cinque statistiche:
+- [Deciso] Cinque statistiche:
   - **Vigore**: resiste ai pericoli;
   - **Passo**: velocità sulla mappa;
   - **Occhio**: trova luoghi e bottino;
   - **Parlantina**: tratta prezzi e ingaggi;
   - **Fegato**: affronta i rischi senza tirarsi indietro.
-- [Proposta] Valore di ogni statistica = base dell'etnia + capitoli della storia. Più un
+- [Deciso] Valore di ogni statistica = base dell'etnia + capitoli della storia. Più un
   personaggio è dotato, più costa ingaggiarlo.
-- [Proposta] La storia continua: viaggi e dungeon aggiungono capitoli nuovi (per i Cocciai,
+- [Deciso] La storia continua: viaggi e dungeon aggiungono capitoli nuovi (per i Cocciai,
   nuove cicatrici d'oro).
-- [Proposta] Il testo si compone da frammenti tradotti in italiano e inglese.
+- [Deciso] Il testo si compone da frammenti tradotti in italiano e inglese.
 - Esempi:
 
   > **Brunilde Sbeccata**, cocciaia, mercenaria. Nata nelle fornaci delle colline rosse. Per
@@ -151,13 +152,9 @@ Il giocatore assolda personaggi già fatti, non li crea. Quattro mestieri:
 - **Travian, OGame**: il ritmo in tempo reale e i round lunghi.
 - **Heroes of Might and Magic, Civilization**: la mappa e lo stile visivo.
 
-## 13. Note tecniche preliminari [Proposta]
+## 13. Note tecniche
 
-- Simulazione a eventi datati (produzione, viaggi, spedizioni, ricerche), separata dalla
-  grafica, con lo stesso codice nel browser e, più avanti, sul server.
-- Il mondo avanza anche a gioco chiuso: alla riapertura si calcola cosa è successo.
-- Contenuti (materie, ricette, luoghi, ricerche) definiti come dati; tutti i testi tramite chiavi
-  it/en.
+Vedi [TECH.md](TECH.md).
 
 ## 14. Prime tappe [Proposta]
 
@@ -172,5 +169,4 @@ Il giocatore assolda personaggi già fatti, non li crea. Quattro mestieri:
 
 ## 15. Domande aperte
 
-1. **Micelidi**: va bene il talento da costruttori?
-2. **Background**: vanno bene i quattro capitoli e le cinque statistiche?
+Nessuna per ora.
