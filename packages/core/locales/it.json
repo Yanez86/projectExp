@@ -27,9 +27,10 @@
   "debug.size.small": "Piccola",
   "debug.size.medium": "Media",
   "debug.size.large": "Grande",
-  "debug.fog": "Nebbia",
+  "debug.fog": "Nuvole",
+  "debug.grid": "Griglia",
   "debug.exploreOnTap": "Esplora toccando",
-  "debug.resetFog": "Ricopri la mappa",
+  "debug.resetFog": "Ricopri di nuvole",
   "debug.show": "Mostra strumenti",
   "debug.hide": "Nascondi strumenti"
 }

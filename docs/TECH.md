@@ -64,7 +64,12 @@ Il server andrà in `apps/server/`.
 - Disegno: esagoni con la punta in alto, come in Civilization; tile con un rilievo che sborda
   verso l'alto (montagne, alberi). Lo zoom va solo a multipli interi (1×, 2×, 3×…), così i pixel
   restano nitidi. Si disegna solo la parte visibile.
-- Nebbia a tre stati, come livello sopra la mappa.
+- La mappa si disegna a strati: terreno, transizioni tra biomi (il bioma più "forte" sconfina
+  nel vicino con una fascia frastagliata; sulle coste spiaggia e schiuma), griglia leggera,
+  rilievo, nuvole.
+- Ciò che non è esplorato è coperto da un mare di nuvole in pixel art; quando una zona viene
+  scoperta, le nuvole si aprono e scivolano via dal punto di scoperta. Le zone esplorate ma fuori
+  vista restano scoperte, un po' più scure.
 - Comandi: trascini per spostarti, rotella o pizzico per lo zoom, tocco per selezionare.
 
 ## 6. Grafica
@@ -86,9 +91,8 @@ Il server andrà in `apps/server/`.
 - TypeScript in modalità rigorosa, ESLint.
 - Test sulla logica: determinismo, generazione della mappa, flussi delle materie.
 - GitHub Actions a ogni push: controllo dei tipi, lint, test e build.
-- Pubblicazione su GitHub Pages dal branch principale, attiva quando Pages è abilitato sul
-  repository e la variabile `PAGES_ENABLED` vale `true` (su un repository privato Pages richiede
-  un piano GitHub a pagamento).
+- Pubblicazione su GitHub Pages dal branch principale, appena Pages è attivo sul repository con
+  sorgente "GitHub Actions" (Settings → Pages): il workflow lo controlla da solo.
 
 ## 9. Prima tappa: la mappa (fatta)
 
@@ -96,13 +100,13 @@ Obiettivo: aprire il gioco su telefono e PC e girare per una mappa generata.
 
 - Setup del repository: struttura, Vite, TypeScript, test, CI, pubblicazione.
 - `core`: matematica degli esagoni, generatore casuale con seed, generazione dei biomi, dati
-  della nebbia.
+  dell'esplorazione.
 - `art`: palette e primo set di tile dei biomi con pxl.
-- `client`: mappa disegnata con Pixi, spostamento e zoom con mouse e touch, nebbia, pannello di
+- `client`: mappa disegnata con Pixi, spostamento e zoom con mouse e touch, nuvole, pannello di
   prova per cambiare seed, scelta della lingua.
 
 È finita quando, su telefono e PC, si genera una mappa da un seed, ci si muove in modo fluido e
-la nebbia copre ciò che non è stato esplorato.
+le nuvole coprono ciò che non è stato esplorato.
 
 ## 10. Domande aperte
 

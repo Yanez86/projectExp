@@ -40,6 +40,10 @@
     {i18n.t("debug.fog")}
   </label>
   <label class="check">
+    <input type="checkbox" bind:checked={game.gridEnabled} />
+    {i18n.t("debug.grid")}
+  </label>
+  <label class="check">
     <input type="checkbox" bind:checked={game.exploreOnTap} disabled={!game.fogEnabled} />
     {i18n.t("debug.exploreOnTap")}
   </label>

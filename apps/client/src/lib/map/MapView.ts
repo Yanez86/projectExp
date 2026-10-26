@@ -1,14 +1,5 @@
+import { Application, Assets, Container, Sprite, TextureSource, type Spritesheet, type Texture } from "pixi.js";
 import {
-  Application,
-  Assets,
-  Container,
-  Sprite,
-  TextureSource,
-  type Spritesheet,
-  type Texture,
-} from "pixi.js";
-import {
-  BIOME_IDS,
   FOG_EXPLORED,
   FOG_UNEXPLORED,
   hexAt,
@@ -18,12 +9,21 @@ import {
   type Hex,
   type WorldMap,
 } from "@exp/core";
-import { COL_STEP, ROW_STEP, TILE_H, TILE_W, hexAtPoint, hexCenter, tileOrigin } from "./layout";
+import { COL_STEP, HEX_TOP, ROW_STEP, TILE_H, TILE_W, hexAtPoint, hexCenter, tileOrigin } from "./layout";
+import { RELIEF, biomeIdOf, edgeOverlays } from "./transitions";
 
 /** Tinta delle caselle esplorate ma fuori vista. */
-const EXPLORED_TINT = 0x8a8aa6;
+const EXPLORED_TINT = 0x9a9ab4;
 /** Spostamento oltre il quale un tocco diventa un trascinamento, in pixel CSS. */
 const TAP_SLOP = 8;
+/** Quanto durano e quanto si allontanano le nuvole che si aprono. */
+const REVEAL_MS = 1400;
+const REVEAL_DRIFT = 22;
+/** Ondeggiare delle nuvole ferme: ampiezza in pixel dell'arte e pausa tra un controllo e l'altro. */
+const WOBBLE_PX = 1.2;
+const WOBBLE_CHECK_MS = 150;
+/** Margine attorno a una casella per decidere se è sullo schermo: le nuvole sbordano. */
+const CULL_MARGIN = 8;
 
 export interface MapViewOptions {
   /** Chiamata quando il giocatore tocca un esagono (non quando trascina). */
@@ -35,18 +35,52 @@ interface Pointer {
   y: number;
 }
 
+/** Gli sprite di una casella, uno per strato. */
+interface HexSprites {
+  x: number;
+  y: number;
+  ground: Sprite;
+  edges: Sprite[];
+  relief: Sprite | undefined;
+  grid: Sprite;
+  cloudBase: Sprite;
+  cloud: Sprite;
+  /** Posizione di riposo del batuffolo e fase del suo ondeggiare. */
+  cloudX: number;
+  cloudY: number;
+  phase: number;
+}
+
+interface Reveal {
+  start: number;
+  dx: number;
+  dy: number;
+}
+
 /**
  * Disegna la mappa con Pixi e gestisce la visuale: trascinamento, zoom con rotella e pizzico,
  * tocco. Lo zoom è sempre un numero intero di pixel del dispositivo per pixel dell'arte, così la
- * pixel art resta nitida. Si ridisegna solo quando qualcosa cambia.
+ * pixel art resta nitida. Si ridisegna solo quando qualcosa cambia o si muove.
+ *
+ * Strati, dal basso: terreno, transizioni tra biomi, griglia, rilievo e sede (in ordine di riga),
+ * velo delle nuvole, batuffoli, selezione.
  */
 export class MapView {
   private app = new Application();
-  private world = new Container({ sortableChildren: true });
+  private world = new Container();
+  private groundLayer = new Container();
+  private edgeLayer = new Container();
+  private gridLayer = new Container({ alpha: 0.14 });
+  private objectLayer = new Container({ sortableChildren: true });
+  private cloudBaseLayer = new Container();
+  private cloudLayer = new Container({ sortableChildren: true });
   private overlay = new Container();
   private textures = new Map<string, Texture>();
   private variants = new Map<string, Texture[]>();
-  private tiles: Sprite[] = [];
+  private hexes: HexSprites[] = [];
+  /** 1 se la casella è sotto le nuvole. */
+  private covered = new Uint8Array(0);
+  private reveals = new Map<number, Reveal>();
   private selection: Sprite | undefined;
   private guild: Sprite | undefined;
   private map: WorldMap | undefined;
@@ -58,16 +92,18 @@ export class MapView {
   /** Posizione del mondo sullo schermo, in pixel CSS. */
   private camX = 0;
   private camY = 0;
+  private viewW = 0;
+  private viewH = 0;
 
   private pointers = new Map<number, Pointer>();
   private gesture:
     | { kind: "drag"; startX: number; startY: number; camX: number; camY: number; moved: boolean }
     | { kind: "pinch"; dist: number; zoom: number; midX: number; midY: number; camX: number; camY: number }
     | undefined;
-  private renderQueued = false;
+  private dirty = false;
+  private frameQueued = false;
+  private wobbleTimer: ReturnType<typeof setTimeout> | undefined;
   private resizeObserver: ResizeObserver | undefined;
-  private viewW = 0;
-  private viewH = 0;
   private destroyed = false;
 
   constructor(
@@ -87,15 +123,24 @@ export class MapView {
       width: this.host.clientWidth || 1,
       height: this.host.clientHeight || 1,
     });
-    this.viewW = this.host.clientWidth;
-    this.viewH = this.host.clientHeight;
     if (this.destroyed) return;
     this.app.ticker.stop();
+    this.viewW = this.host.clientWidth;
+    this.viewH = this.host.clientHeight;
     const canvas = this.app.canvas;
     canvas.style.display = "block";
     canvas.style.touchAction = "none";
     this.host.appendChild(canvas);
-    this.app.stage.addChild(this.world, this.overlay);
+    this.world.addChild(
+      this.groundLayer,
+      this.edgeLayer,
+      this.gridLayer,
+      this.objectLayer,
+      this.cloudBaseLayer,
+      this.cloudLayer,
+      this.overlay,
+    );
+    this.app.stage.addChild(this.world);
 
     const sheet = await Assets.load<Spritesheet>(sheetUrl);
     for (const [name, texture] of Object.entries(sheet.textures)) {
@@ -120,6 +165,7 @@ export class MapView {
 
   destroy(): void {
     this.destroyed = true;
+    clearTimeout(this.wobbleTimer);
     this.resizeObserver?.disconnect();
     this.app.destroy(true, { children: true });
   }
@@ -127,31 +173,56 @@ export class MapView {
   setMap(map: WorldMap, fog: Fog): void {
     this.map = map;
     this.fog = fog;
-    this.world.removeChildren().forEach((child) => child.destroy());
-    this.tiles = [];
+    for (const layer of [this.groundLayer, this.edgeLayer, this.gridLayer, this.objectLayer, this.cloudBaseLayer, this.cloudLayer]) {
+      layer.removeChildren().forEach((child) => child.destroy());
+    }
+    this.hexes = [];
+    this.reveals.clear();
+    this.covered = new Uint8Array(map.width * map.height);
+    const gridTexture = this.texture("grid");
+    const cloudBaseTexture = this.texture("cloud_base");
+    const clouds = this.variants.get("cloud") ?? [];
+
     for (let i = 0; i < map.width * map.height; i++) {
       const h = hexAt(map, i);
       const { row } = hexToOffset(h);
-      const sprite = new Sprite(this.biomeTexture(map, i));
-      const o = tileOrigin(h);
-      sprite.position.set(o.x, o.y);
-      sprite.zIndex = row * 2;
-      this.tiles.push(sprite);
-      this.world.addChild(sprite);
+      const { x, y } = tileOrigin(h);
+      const id = biomeIdOf(map, i);
+      const variant = map.variants[i] as number;
+
+      const ground = this.addSprite(this.groundLayer, this.pick(id, variant), x, y + HEX_TOP);
+      const edges = edgeOverlays(map, h).map((name) => this.addSprite(this.edgeLayer, this.texture(name), x, y + HEX_TOP));
+      const grid = this.addSprite(this.gridLayer, gridTexture, x, y + HEX_TOP);
+      let relief: Sprite | undefined;
+      if (RELIEF.has(id)) {
+        relief = this.addSprite(this.objectLayer, this.pick(`${id}_top`, variant), x, y);
+        relief.zIndex = row * 2;
+      }
+      const cloudBase = this.addSprite(this.cloudBaseLayer, cloudBaseTexture, x, y + HEX_TOP);
+      // Ogni batuffolo spostato a caso dal centro e di forma diversa, così il mare di nuvole non
+      // sembra una griglia.
+      const c = hexCenter(h);
+      const jitter = (variant * 37 + i * 101) & 255;
+      const cloudX = c.x + (jitter & 15) - 7;
+      const cloudY = c.y + ((jitter >> 4) & 7) - 4;
+      const cloud = this.addSprite(this.cloudLayer, clouds[variant % clouds.length] ?? cloudBaseTexture, cloudX, cloudY);
+      cloud.anchor.set(0.5);
+      cloud.zIndex = cloudY;
+      this.hexes.push({ x, y, ground, edges, relief, grid, cloudBase, cloud, cloudX, cloudY, phase: (variant / 256) * Math.PI * 2 });
     }
-    const guildTexture = this.textures.get("guild");
-    if (guildTexture) {
-      this.guild = new Sprite(guildTexture);
-      this.guild.anchor.set(0.5, 1);
-      const c = hexCenter(map.start);
-      this.guild.position.set(c.x, c.y + 7);
-      this.guild.zIndex = hexToOffset(map.start).row * 2 + 1;
-      this.world.addChild(this.guild);
-    }
+
+    this.guild?.destroy();
+    this.guild = this.addSprite(this.objectLayer, this.texture("guild"), 0, 0);
+    this.guild.anchor.set(0.5, 1);
+    const c = hexCenter(map.start);
+    this.guild.position.set(c.x, c.y + 7);
+    this.guild.zIndex = hexToOffset(map.start).row * 2 + 1;
+
     this.selection?.destroy();
     this.selection = undefined;
     this.refreshFog();
     this.centerOn(map.start);
+    this.scheduleWobble();
   }
 
   setFogEnabled(enabled: boolean): void {
@@ -159,23 +230,56 @@ export class MapView {
     this.refreshFog();
   }
 
-  /** Da chiamare dopo aver cambiato lo stato della nebbia. */
-  refreshFog(): void {
+  setGridEnabled(enabled: boolean): void {
+    this.gridLayer.visible = enabled;
+    this.requestRender();
+  }
+
+  /**
+   * Da chiamare dopo aver cambiato la nebbia. Con `revealFrom` le nuvole delle caselle appena
+   * scoperte si aprono allontanandosi da quel punto; senza, tutto cambia di colpo.
+   */
+  refreshFog(revealFrom?: Hex): void {
     const { map, fog } = this;
     if (!map || !fog) return;
-    const fogTexture = this.textures.get("fog");
-    this.tiles.forEach((sprite, i) => {
+    const now = performance.now();
+    const origin = revealFrom ? hexCenter(revealFrom) : undefined;
+    this.hexes.forEach((hs, i) => {
       const state = this.fogEnabled ? fog.state[i] : undefined;
-      if (state === FOG_UNEXPLORED && fogTexture) {
-        sprite.texture = fogTexture;
-        sprite.tint = 0xffffff;
-      } else {
-        sprite.texture = this.biomeTexture(map, i);
-        sprite.tint = state === FOG_EXPLORED ? EXPLORED_TINT : 0xffffff;
+      const covered = state === FOG_UNEXPLORED;
+      const wasCovered = this.covered[i] === 1;
+      this.covered[i] = covered ? 1 : 0;
+
+      const tint = state === FOG_EXPLORED ? EXPLORED_TINT : 0xffffff;
+      hs.ground.tint = tint;
+      for (const edge of hs.edges) edge.tint = tint;
+      if (hs.relief) {
+        hs.relief.tint = tint;
+        hs.relief.visible = !covered;
+      }
+
+      if (covered) {
+        this.reveals.delete(i);
+        this.resetCloud(hs, true);
+      } else if (wasCovered && origin) {
+        const c = { x: hs.cloudX, y: hs.cloudY };
+        let dx = c.x - origin.x;
+        let dy = c.y - origin.y;
+        const len = Math.hypot(dx, dy);
+        if (len < 1) {
+          dx = Math.cos(hs.phase);
+          dy = Math.sin(hs.phase);
+        } else {
+          dx /= len;
+          dy /= len;
+        }
+        this.reveals.set(i, { start: now, dx, dy });
+      } else if (!this.reveals.has(i)) {
+        this.resetCloud(hs, false);
       }
     });
     if (this.guild) {
-      this.guild.visible = !this.fogEnabled || fog.state[tileIndex(map, map.start)] !== FOG_UNEXPLORED;
+      this.guild.visible = this.covered[tileIndex(map, map.start)] !== 1;
     }
     this.requestRender();
   }
@@ -187,11 +291,10 @@ export class MapView {
       return;
     }
     if (!this.selection) {
-      this.selection = new Sprite(this.textures.get("select"));
-      this.overlay.addChild(this.selection);
+      this.selection = this.addSprite(this.overlay, this.texture("select"), 0, 0);
     }
     const o = tileOrigin(h);
-    this.selection.position.set(o.x, o.y);
+    this.selection.position.set(o.x, o.y + HEX_TOP);
     this.selection.visible = true;
     this.requestRender();
   }
@@ -210,14 +313,108 @@ export class MapView {
     this.setZoom(this.zoom + steps * step, screenX, screenY, this.camX, this.camY, this.zoom);
   }
 
+  // ---------------------------------------------------------------- sprite
+
+  private texture(name: string): Texture {
+    const texture = this.textures.get(name);
+    if (!texture) throw new Error(`Manca il tile ${name}`);
+    return texture;
+  }
+
+  /** Una delle varianti di un tile, scelta dal numero casuale della casella. */
+  private pick(name: string, variant: number): Texture {
+    const list = this.variants.get(name) ?? [];
+    const texture = list[variant % Math.max(1, list.length)];
+    if (!texture) throw new Error(`Manca il tile ${name}`);
+    return texture;
+  }
+
+  private addSprite(layer: Container, texture: Texture, x: number, y: number): Sprite {
+    const sprite = new Sprite(texture);
+    sprite.position.set(x, y);
+    layer.addChild(sprite);
+    return sprite;
+  }
+
+  private resetCloud(hs: HexSprites, visible: boolean): void {
+    hs.cloudBase.visible = visible;
+    hs.cloudBase.alpha = 1;
+    hs.cloud.visible = visible;
+    hs.cloud.alpha = 1;
+    hs.cloud.position.set(hs.cloudX, hs.cloudY);
+  }
+
+  // ---------------------------------------------------------------- animazione
+
+  private requestRender(): void {
+    this.dirty = true;
+    this.queueFrame();
+  }
+
+  private queueFrame(): void {
+    if (this.frameQueued || this.destroyed) return;
+    this.frameQueued = true;
+    requestAnimationFrame(this.frame);
+  }
+
+  private frame = (now: number): void => {
+    this.frameQueued = false;
+    if (this.destroyed) return;
+    if (this.reveals.size > 0) {
+      this.stepReveals(now);
+      this.dirty = true;
+    }
+    if (this.dirty) {
+      this.dirty = false;
+      this.app.render();
+    }
+    if (this.reveals.size > 0) this.queueFrame();
+  };
+
+  /** Le nuvole scoperte scivolano via dal punto di scoperta e svaniscono. */
+  private stepReveals(now: number): void {
+    for (const [i, reveal] of this.reveals) {
+      const hs = this.hexes[i];
+      if (!hs) continue;
+      const t = Math.min(1, (now - reveal.start) / REVEAL_MS);
+      const ease = 1 - (1 - t) ** 3;
+      hs.cloud.position.set(
+        Math.round(hs.cloudX + reveal.dx * REVEAL_DRIFT * ease),
+        Math.round(hs.cloudY + reveal.dy * REVEAL_DRIFT * ease),
+      );
+      hs.cloud.alpha = t < 0.35 ? 1 : 1 - (t - 0.35) / 0.65;
+      hs.cloudBase.alpha = Math.max(0, 1 - t * 2.5);
+      if (t >= 1) {
+        this.resetCloud(hs, false);
+        this.reveals.delete(i);
+      }
+    }
+  }
+
+  /** Le nuvole ferme ondeggiano di un pixel, piano: si ridisegna solo quando uno si sposta. */
+  private scheduleWobble(): void {
+    clearTimeout(this.wobbleTimer);
+    this.wobbleTimer = setTimeout(() => {
+      if (this.destroyed) return;
+      const now = performance.now();
+      let moved = false;
+      this.hexes.forEach((hs, i) => {
+        if (!hs.cloud.visible || hs.cloud.culled || this.reveals.has(i)) return;
+        const x = hs.cloudX + Math.round(Math.sin(now / 2400 + hs.phase) * WOBBLE_PX);
+        if (x !== hs.cloud.x) {
+          hs.cloud.x = x;
+          moved = true;
+        }
+      });
+      if (moved) this.requestRender();
+      this.scheduleWobble();
+    }, WOBBLE_CHECK_MS);
+  }
+
   // ---------------------------------------------------------------- visuale
 
   private get dpr(): number {
     return this.app.renderer?.resolution ?? (window.devicePixelRatio || 1);
-  }
-
-  private get minZoom(): number {
-    return 1;
   }
 
   private get maxZoom(): number {
@@ -232,7 +429,7 @@ export class MapView {
     fromCamY: number,
     fromZoom: number,
   ): void {
-    const zoom = Math.min(this.maxZoom, Math.max(this.minZoom, Math.round(target)));
+    const zoom = Math.min(this.maxZoom, Math.max(1, Math.round(target)));
     // Il punto del mondo sotto (screenX, screenY) resta lì dopo lo zoom.
     const fromScale = fromZoom / this.dpr;
     const worldX = (screenX - fromCamX) / fromScale;
@@ -261,23 +458,28 @@ export class MapView {
     const snap = (v: number) => Math.round(v * this.dpr) / this.dpr;
     this.camX = snap(this.camX);
     this.camY = snap(this.camY);
-    for (const layer of [this.world, this.overlay]) {
-      layer.scale.set(scale);
-      layer.position.set(this.camX, this.camY);
-    }
+    this.world.scale.set(scale);
+    this.world.position.set(this.camX, this.camY);
     this.cull();
     this.requestRender();
   }
 
-  /** Nasconde i tile fuori dallo schermo: meno lavoro per la scheda grafica. */
+  /** Esclude dal disegno le caselle fuori dallo schermo: meno lavoro per la scheda grafica. */
   private cull(): void {
     const scale = this.zoom / this.dpr;
-    const left = -this.camX / scale - TILE_W;
-    const top = -this.camY / scale - TILE_H;
-    const right = (this.host.clientWidth - this.camX) / scale;
-    const bottom = (this.host.clientHeight - this.camY) / scale;
-    for (const sprite of this.tiles) {
-      sprite.visible = sprite.x > left && sprite.x < right && sprite.y > top && sprite.y < bottom;
+    const left = -this.camX / scale - TILE_W - CULL_MARGIN;
+    const top = -this.camY / scale - TILE_H - CULL_MARGIN;
+    const right = (this.host.clientWidth - this.camX) / scale + CULL_MARGIN;
+    const bottom = (this.host.clientHeight - this.camY) / scale + CULL_MARGIN;
+    for (const hs of this.hexes) {
+      const culled = !(hs.x > left && hs.x < right && hs.y > top && hs.y < bottom);
+      if (hs.ground.culled === culled) continue;
+      hs.ground.culled = culled;
+      for (const edge of hs.edges) edge.culled = culled;
+      if (hs.relief) hs.relief.culled = culled;
+      hs.grid.culled = culled;
+      hs.cloudBase.culled = culled;
+      hs.cloud.culled = culled;
     }
   }
 
@@ -292,23 +494,6 @@ export class MapView {
     this.viewH = h;
     this.app.renderer.resize(w, h);
     this.applyCamera();
-  }
-
-  private requestRender(): void {
-    if (this.renderQueued || this.destroyed) return;
-    this.renderQueued = true;
-    requestAnimationFrame(() => {
-      this.renderQueued = false;
-      if (!this.destroyed) this.app.render();
-    });
-  }
-
-  private biomeTexture(map: WorldMap, index: number): Texture {
-    const id = BIOME_IDS[map.biomes[index] as number] as string;
-    const list = this.variants.get(id) ?? [];
-    const texture = list[(map.variants[index] as number) % Math.max(1, list.length)];
-    if (!texture) throw new Error(`Manca il tile del bioma ${id}`);
-    return texture;
   }
 
   // ---------------------------------------------------------------- input

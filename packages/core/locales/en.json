@@ -27,9 +27,10 @@
   "debug.size.small": "Small",
   "debug.size.medium": "Medium",
   "debug.size.large": "Large",
-  "debug.fog": "Fog",
+  "debug.fog": "Clouds",
+  "debug.grid": "Grid",
   "debug.exploreOnTap": "Explore on tap",
-  "debug.resetFog": "Cover the map again",
+  "debug.resetFog": "Cover with clouds again",
   "debug.show": "Show tools",
   "debug.hide": "Hide tools"
 }

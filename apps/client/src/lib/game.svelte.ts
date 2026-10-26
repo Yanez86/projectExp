@@ -29,10 +29,13 @@ class Game {
   seed = $state(load("exp.seed") ?? randomSeed());
   size = $state<MapSize>("medium");
   fogEnabled = $state(true);
+  gridEnabled = $state(true);
   exploreOnTap = $state(false);
   selected = $state<Hex | undefined>(undefined);
   /** Cresce a ogni cambio di nebbia: la vista lo osserva per ridisegnare. */
   fogVersion = $state(0);
+  /** Da dove si aprono le nuvole all'ultimo cambio di nebbia; nessuno se il cambio è di colpo. */
+  revealFrom: Hex | undefined = undefined;
   map = $state.raw<WorldMap | undefined>(undefined);
   fog = $state.raw<Fog | undefined>(undefined);
   private sources: VisionSource[] = [];
@@ -45,14 +48,14 @@ class Game {
     this.fog = createFog(map);
     this.sources = [{ hex: map.start, radius: GUILD_VISION }];
     this.selected = undefined;
-    this.updateFog();
+    this.updateFog(undefined);
   }
 
   tap(hex: Hex): void {
     if (this.exploreOnTap && this.map) {
       // La sede vede sempre; l'ultimo punto toccato resta in vista, i precedenti solo esplorati.
       this.sources = [{ hex: this.map.start, radius: GUILD_VISION }, { hex, radius: TAP_VISION }];
-      this.updateFog();
+      this.updateFog(hex);
     }
     this.selected = hex;
   }
@@ -61,12 +64,13 @@ class Game {
     if (!this.map || !this.fog) return;
     this.fog.state.fill(0);
     this.sources = [{ hex: this.map.start, radius: GUILD_VISION }];
-    this.updateFog();
+    this.updateFog(undefined);
   }
 
-  private updateFog(): void {
+  private updateFog(revealFrom: Hex | undefined): void {
     if (!this.map || !this.fog) return;
     updateVisibility(this.fog, this.map, this.sources);
+    this.revealFrom = revealFrom;
     this.fogVersion++;
   }
 }

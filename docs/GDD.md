@@ -42,6 +42,9 @@ linee di produzione e vende alle città sparse sulla mappa.
 
 - [Deciso] La mappa parte coperta: la gilda manda i suoi personaggi a scoprire le terre selvagge
   e i luoghi di interesse.
+- [Deciso] Ciò che non è ancora esplorato è coperto da nuvole in pixel art, che si aprono e
+  scivolano via man mano che il giocatore scopre la mappa. Le zone esplorate ma fuori vista
+  restano scoperte, un po' più scure.
 - [Deciso] Il giocatore può costruire avamposti sulla mappa per raccogliere materie prime, che
   vengono mandate alla gilda.
 - [Aperto] Quali luoghi di interesse esistono e cosa offrono.
@@ -158,7 +161,7 @@ Vedi [TECH.md](TECH.md).
 
 ## 14. Prime tappe [Proposta]
 
-1. Mappa: generazione a esagoni, biomi, nebbia, navigazione con mouse e touch.
+1. Mappa: generazione a esagoni, biomi, nuvole sull'inesplorato, navigazione con mouse e touch.
 2. Sede della gilda, motore a eventi, primi esploratori sulla mappa.
 3. Avamposti e materie prime; prime linee di produzione.
 4. Città, mercato e carovane.

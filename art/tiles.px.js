@@ -1,67 +1,76 @@
-// Tile della mappa: esagoni con la punta in alto, 32 px di larghezza, lati obliqui 2:1.
-// Ogni tile è 32×48: l'esagono occupa le ultime 32 righe; sopra resta spazio per il rilievo
-// (alberi, colline, montagne), che sborda sulla riga di esagoni dietro.
-// Gli esagoni si incastrano con passo 32 in orizzontale e 24 in verticale (righe dispari +16).
-// Luce da in alto a sinistra.
+// Tile della mappa: esagoni con la punta in alto, 32×32 px, lati obliqui 2:1. Si incastrano con
+// passo 32 in orizzontale e 24 in verticale (righe dispari spostate di 16). Luce da in alto a
+// sinistra. La mappa si compone a strati, dal basso:
+//   <bioma>_<n>          il terreno (32×32)
+//   edge_<bioma>_<d>     il bioma vicino che sfuma nel bordo d (32×32, vedi DIRS)
+//   shore_<d>            spiaggia e schiuma su una casella d'acqua che tocca terra dal lato d
+//   <bioma>_top_<n>      il rilievo (32×48: 16 px sopra l'esagono per alberi e montagne)
+//   grid                 la griglia, leggera, disegnata in trasparenza dal gioco
+//   cloud_base, cloud_<n> le nuvole che coprono ciò che non è ancora esplorato
 
 pal({
   k: "#1a1423",                                                         // inchiostro
-  l: "#b5d86a", g: "#82b84a", G: "#568f3c", h: "#2f6438", q: "#1d4232", // erba, foglie
-  e: "#c8a66c", E: "#9a7a4a", d: "#6a5034",                             // terra
-  a: "#f0dca0", A: "#d9bc7c", z: "#b39257",                             // sabbia
-  s: "#c4bfcf", S: "#8f8aa2", K: "#605c78", n: "#3d3a52",               // roccia
-  w: "#f4f8ff", W: "#d2deef", v: "#a3b6d3",                             // neve
-  N: "#1d3a74", B: "#2a5aa2", b: "#4782cc",                             // acque profonde
-  c: "#63b0dc", C: "#4b96cc", f: "#d4eef8",                             // acque basse, schiuma
-  L: "#9aa858", m: "#7c8a44", M: "#56663a", u: "#3e5048", U: "#2b3a36", // palude
-  o: "#7a5034", O: "#4e3424",                                           // legno
-  r: "#e25c5c", y: "#f4d44c", p: "#f6f0fa",                             // fiori, oro
-  F: "#1c1b29", D: "#2a2940",                                           // nebbia
+  l: "#a6d84a", g: "#6fb43a", G: "#3f8a2e", h: "#24632f", q: "#143f2a", // erba, foglie
+  e: "#c99a52", E: "#94693a", d: "#5e4228",                             // terra
+  a: "#f4d58a", A: "#e0b45e", z: "#b88a42",                             // sabbia
+  s: "#bcb4d2", S: "#8279a0", K: "#564d78", n: "#362f52",               // roccia
+  w: "#f6fbff", W: "#cfe0f4", v: "#94acd6",                             // neve
+  N: "#13306e", B: "#1d4f9e", b: "#3a78d0",                             // acque profonde
+  c: "#3fa2dc", C: "#2c86c8", f: "#c8f0ff",                             // acque basse, schiuma
+  L: "#8ea33e", m: "#6a7f2e", M: "#485e26", u: "#2f4a3c", U: "#1f342c", // palude
+  o: "#7a4a2a", O: "#4a2c1c",                                           // legno
+  r: "#e8434a", y: "#ffd23a", p: "#f8eefc",                             // fiori, oro
+  x: "#e6eefa", j: "#b8c8e6", J: "#8b9fcc",                             // nuvole
   Y: "#ffe680", Z: "#fff6c8",                                           // selezione
   i: "#ecdcb8", I: "#c9b48e", R: "#c0473a", T: "#8a2f33", t: "#e2735a", // sede: intonaco, tetto
 })
 
-const W = 32, H = 48, TOP = 16
+const S = 32, TOP = 16
 
-// L'esagono in coordinate del tile: righe TOP..TOP+31.
+// L'esagono in un riquadro 32×32.
 function inHex(x, y) {
-  const r = y - TOP
-  if (r < 0 || r > 31 || x < 0 || x > 31) return false
-  if (r < 8) { const s = 15 - 2 * r; return x >= s && x <= 31 - s }
-  if (r >= 24) { const s = 1 + 2 * (r - 24); return x >= s && x <= 31 - s }
+  if (x < 0 || x > 31 || y < 0 || y > 31) return false
+  if (y < 8) { const s = 15 - 2 * y; return x >= s && x <= 31 - s }
+  if (y >= 24) { const s = 1 + 2 * (y - 24); return x >= s && x <= 31 - s }
   return true
 }
-const hexRegion = (x, y) => inHex(x, y)
+const inner = (x, y) => inHex(x, y) && inHex(x - 1, y) && inHex(x + 1, y) && inHex(x, y - 1) && inHex(x, y + 1)
 
-// Fondo dell'esagono. Con `light`/`dark` disegna il bordo: chiaro sopra e a sinistra, scuro
-// sotto e a destra; due esagoni vicini mostrano così una coppia chiaro/scuro, una griglia leggera.
-function ground(c, base, light, dark) {
-  for (let y = TOP; y < H; y++) for (let x = 0; x < W; x++) {
+// I sei lati, nello stesso ordine delle direzioni del gioco (packages/core/src/hex.ts):
+// est, nord-est, nord-ovest, ovest, sud-ovest, sud-est. Estremi in angoli di pixel.
+const DIRS = [
+  [[32, 8], [32, 24]],
+  [[16, 0], [32, 8]],
+  [[0, 8], [16, 0]],
+  [[0, 24], [0, 8]],
+  [[16, 32], [0, 24]],
+  [[32, 24], [16, 32]],
+]
+// Distanza del centro del pixel (x, y) dal lato d, e posizione lungo il lato (0–1).
+function edgeDist(d, x, y) {
+  const [[ax, ay], [bx, by]] = DIRS[d]
+  const px = x + 0.5 - ax, py = y + 0.5 - ay, ex = bx - ax, ey = by - ay
+  const len = Math.hypot(ex, ey)
+  return { dist: Math.abs(ex * py - ey * px) / len, along: (px * ex + py * ey) / (len * len) }
+}
+
+const edgeMin = (x, y) => Math.min(...DIRS.map((_, d) => edgeDist(d, x, y).dist))
+
+// Terreno: un colore di base e macchie morbide di un secondo tono, ad almeno 3 px dal bordo,
+// così due caselle dello stesso bioma si toccano senza cuciture.
+function ground(c, base, patch, seed, scale, threshold) {
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
     if (!inHex(x, y)) continue
-    let k = base
-    if (light) {
-      const up = !inHex(x, y - 1), down = !inHex(x, y + 1)
-      const left = !inHex(x - 1, y), right = !inHex(x + 1, y)
-      if (down || (right && !up)) k = dark
-      else if (up || left) k = light
-    }
-    c.px(x, y, k)
+    const blob = patch && edgeMin(x, y) > 3 && vnoise(x / scale + seed * 7.3, y / scale + seed * 3.1) < threshold
+    c.px(x, y, blob ? patch : base)
   }
 }
 
-// Una macchia di un tono lungo una forma morbida, dentro l'esagono e lontano dal bordo.
-function patches(c, key, seed, scale, threshold) {
-  for (let y = TOP + 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
-    if (!inHex(x, y - 1) || !inHex(x, y + 1) || !inHex(x - 1, y) || !inHex(x + 1, y)) continue
-    if (vnoise(x / scale + seed * 7.3, y / scale + seed * 3.1) < threshold) c.px(x, y, key)
-  }
-}
-
-// Punti dentro l'esagono, ben lontani dal bordo, scelti in modo ripetibile.
+// Punti dentro l'esagono (riquadro 32×32), lontani dal bordo, scelti in modo ripetibile.
 function spots(seed, count, margin = 4) {
   const out = []
   for (let i = 0; out.length < count && i < 400; i++) {
-    const x = Math.floor(hash(i, seed) * W), y = TOP + Math.floor(hash(seed, i + 77) * 32)
+    const x = Math.floor(hash(i, seed) * S), y = Math.floor(hash(seed, i + 77) * S)
     let ok = true
     for (let m = 1; m <= margin && ok; m++) {
       ok = inHex(x - m, y) && inHex(x + m, y) && inHex(x, y - m) && inHex(x, y + m)
@@ -91,6 +100,13 @@ sprite("_reed", `
   hh
   h.
   h.`)
+sprite("_pool", { w: 10, h: 4 }, (c) => {
+  c.ellipse(5, 2, 4, 1, "u"); c.hline(1, 2, 2, "u"); c.hline(3, 3, 5, "U"); c.hline(3, 1, 2, "C")
+})
+sprite("_pebble", "S\nK")
+sprite("_flower_r", "r")
+sprite("_flower_y", "y")
+sprite("_flower_w", "p")
 
 sprite("_tree", { outline: "q", pivot: "bottom" }, `
   ....GGG...
@@ -119,24 +135,19 @@ sprite("_pine", { outline: "n", pivot: "bottom" }, `
   ...oO....`)
 
 // Una collina tondeggiante, illuminata da in alto a sinistra.
-sprite("_hill", { w: 18, h: 9, pivot: "bottom" }, (c) => {
-  const cx = 8.5, cy = 8.5, rx = 9, ry = 8.5
-  for (let y = 0; y < 9; y++) for (let x = 0; x < 18; x++) {
-    const nx = (x + 0.5 - cx) / rx, ny = (y + 0.5 - cy) / ry
-    if (nx * nx + ny * ny > 1) continue
-    const v = -nx * 0.55 - ny * 0.85 + (bayer(x, y) - 0.5) * 0.2
-    c.px(x, y, v > 0.75 ? "l" : v > 0.45 ? "g" : v > 0.15 ? "G" : "h")
-  }
-})
-sprite("_hill_s", { w: 12, h: 6, pivot: "bottom" }, (c) => {
-  const cx = 5.5, cy = 5.5, rx = 6, ry = 5.5
-  for (let y = 0; y < 6; y++) for (let x = 0; x < 12; x++) {
-    const nx = (x + 0.5 - cx) / rx, ny = (y + 0.5 - cy) / ry
-    if (nx * nx + ny * ny > 1) continue
-    const v = -nx * 0.55 - ny * 0.85 + (bayer(x, y) - 0.5) * 0.2
-    c.px(x, y, v > 0.75 ? "l" : v > 0.45 ? "g" : v > 0.15 ? "G" : "h")
-  }
-})
+function hill(name, w, h) {
+  sprite(name, { w, h, pivot: "bottom" }, (c) => {
+    const cx = w / 2, cy = h, rx = w / 2, ry = h
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const nx = (x + 0.5 - cx) / rx, ny = (y + 0.5 - cy) / ry
+      if (nx * nx + ny * ny > 1) continue
+      const v = -nx * 0.55 - ny * 0.85 + (bayer(x, y) - 0.5) * 0.2
+      c.px(x, y, v > 0.75 ? "l" : v > 0.45 ? "g" : v > 0.15 ? "G" : "h")
+    }
+  })
+}
+hill("_hill", 18, 9)
+hill("_hill_s", 12, 6)
 
 // Una vetta: faccia sinistra in luce, destra in ombra, cresta ondulata, neve in cima.
 function peak(name, w, h, snow, seed) {
@@ -169,32 +180,51 @@ sprite("_rock", { outline: "n", pivot: "bottom" }, `
   .sS.
   sSSK
   SSKK`)
-sprite("_pool", { w: 10, h: 4 }, (c) => {
-  c.ellipse(5, 2, 4, 1, "u"); c.hline(1, 2, 2, "u"); c.hline(3, 3, 5, "U"); c.hline(3, 1, 2, "C")
-})
-sprite("_flower_r", "r")
-sprite("_flower_y", "y")
-sprite("_flower_w", "p")
 
-// ---------------------------------------------------------------- biomi
+// ---------------------------------------------------------------- terreno
 
 for (let v = 0; v < 2; v++) {
-  sprite(`deep_water_${v}`, { w: W, h: H },
-    (c) => { ground(c, "B"); patches(c, "N", v + 1, 5, 0.27) },
+  sprite(`deep_water_${v}`, { w: S, h: S },
+    (c) => ground(c, "B", "N", v + 1, 3.5, 0.2),
     ...spots(11 + v, 3, 3).map(([x, y]) => stamp("_wave", x - 2, y)))
-  sprite(`shallow_water_${v}`, { w: W, h: H },
-    (c) => { ground(c, "c"); patches(c, "C", v + 5, 6, 0.35) },
+  sprite(`shallow_water_${v}`, { w: S, h: S },
+    (c) => ground(c, "c", "C", v + 5, 6, 0.33),
     ...spots(21 + v, 3, 3).map(([x, y]) => stamp("_ripple", x - 2, y)))
+  sprite(`hills_${v}`, { w: S, h: S },
+    (c) => ground(c, "g", "e", v + 17, 5, 0.25),
+    ...spots(51 + v, 3, 3).map(([x, y]) => stamp("_tuft_dry", x - 2, y)))
+  sprite(`swamp_${v}`, { w: S, h: S },
+    (c) => ground(c, "m", "M", v + 25, 5, 0.32),
+    ...spots(71 + v, 3, 4).map(([x, y]) => stamp("_pool", x - 4, y - 1)),
+    ...spots(81 + v, 4, 2).map(([x, y]) => stamp("_reed", x, y - 4)))
+  sprite(`tundra_${v}`, { w: S, h: S },
+    (c) => ground(c, "W", "w", v + 29, 3.5, 0.24),
+    ...spots(97 + v, 3, 3).map(([x, y]) => stamp("_pebble", x, y)))
+  sprite(`desert_${v}`, { w: S, h: S }, (c) => {
+    ground(c, "A")
+    // Creste di dune: un arco chiaro con l'ombra subito sotto.
+    for (let i = 0; i < 3; i++) {
+      const y0 = 8 + i * 8 + v * 2, x0 = 4 + ((i + v) % 2) * 6
+      for (let x = x0; x < x0 + 16; x++) {
+        const y = y0 + Math.round(Math.sin((x - x0) / 5) * 2)
+        if (inner(x, y) && inner(x, y + 1)) { c.px(x, y, "a"); c.px(x, y + 1, "z") }
+      }
+    }
+  })
 }
 
 for (let v = 0; v < 3; v++) {
-  const tufts = spots(31 + v, 4, 3)
-  const flowers = spots(41 + v, 2, 2)
-  sprite(`plains_${v}`, { w: W, h: H },
-    (c) => { ground(c, "g", "l", "G"); patches(c, "G", v + 9, 6, 0.28) },
-    ...tufts.map(([x, y]) => stamp("_tuft", x - 2, y)),
-    ...flowers.map(([x, y], i) => stamp(["_flower_r", "_flower_y", "_flower_w"][(v + i) % 3], x, y)))
+  sprite(`plains_${v}`, { w: S, h: S },
+    (c) => ground(c, "g", "G", v + 9, 6, 0.28),
+    ...spots(31 + v, 4, 3).map(([x, y]) => stamp("_tuft", x - 2, y)),
+    ...spots(41 + v, 2, 2).map(([x, y], i) => stamp(["_flower_r", "_flower_y", "_flower_w"][(v + i) % 3], x, y)))
+  sprite(`forest_${v}`, { w: S, h: S }, (c) => ground(c, "G", "h", v + 13, 5, 0.35))
+  sprite(`mountains_${v}`, { w: S, h: S },
+    (c) => ground(c, "S", "K", v + 21, 5, 0.3),
+    ...spots(61 + v, 3, 3).map(([x, y]) => stamp("_pebble", x, y)))
 }
+
+// ---------------------------------------------------------------- rilievo
 
 // Alberi dal fondo verso il davanti, così quelli vicini coprono quelli lontani.
 const FOREST = [
@@ -202,70 +232,78 @@ const FOREST = [
   [[12, 27], [23, 31], [7, 35], [18, 40], [27, 41]],
   [[6, 30], [17, 27], [25, 33], [11, 39], [21, 43]],
 ]
-for (let v = 0; v < 3; v++) {
-  sprite(`forest_${v}`, { w: W, h: H },
-    (c) => { ground(c, "G", "g", "h"); patches(c, "h", v + 13, 5, 0.35) },
-    ...FOREST[v].map(([x, y], i) => stamp((i + v) % 3 === 1 ? "_tree_b" : "_tree", x, y)))
-}
-
 const HILLS = [
   [["_hill", 10, 31], ["_hill_s", 23, 34], ["_hill", 17, 42]],
   [["_hill_s", 8, 30], ["_hill", 20, 33], ["_hill_s", 11, 41], ["_hill_s", 24, 43]],
 ]
-for (let v = 0; v < 2; v++) {
-  sprite(`hills_${v}`, { w: W, h: H },
-    (c) => { ground(c, "g", "l", "G"); patches(c, "e", v + 17, 5, 0.25) },
-    ...spots(51 + v, 2, 3).map(([x, y]) => stamp("_tuft_dry", x - 2, y)),
-    ...HILLS[v].map(([name, x, y]) => stamp(name, x, y)))
-}
-
 const MOUNTAINS = [
-  [["_peak", 13, 37], ["_peak_s", 24, 42]],
-  [["_peak_m", 9, 34], ["_peak", 19, 40]],
+  [["_peak", 13, 37], ["_peak_s", 24, 42], ["_rock", 8, 44]],
+  [["_peak_m", 9, 34], ["_peak", 19, 40], ["_rock", 27, 37]],
   [["_peak_s", 7, 32], ["_peak", 17, 36], ["_peak_s", 26, 43]],
 ]
+const TUNDRA = [
+  [["_pine", 10, 32], ["_pine", 21, 38], ["_rock", 15, 43]],
+  [["_pine", 10, 35], ["_rock", 22, 31], ["_pine", 21, 41]],
+]
 for (let v = 0; v < 3; v++) {
-  sprite(`mountains_${v}`, { w: W, h: H },
-    (c) => { ground(c, "S", "s", "K"); patches(c, "K", v + 21, 5, 0.3) },
-    ...MOUNTAINS[v].map(([name, x, y]) => stamp(name, x, y)),
-    ...spots(61 + v, 1, 3).map(([x, y]) => stamp("_rock", x, Math.max(y, 42))))
+  sprite(`forest_top_${v}`, { w: S, h: S + TOP },
+    ...FOREST[v].map(([x, y], i) => stamp((i + v) % 3 === 1 ? "_tree_b" : "_tree", x, y)))
+  sprite(`mountains_top_${v}`, { w: S, h: S + TOP }, ...MOUNTAINS[v].map(([name, x, y]) => stamp(name, x, y)))
 }
-
 for (let v = 0; v < 2; v++) {
-  sprite(`desert_${v}`, { w: W, h: H }, (c) => {
-    ground(c, "A", "a", "z")
-    // Creste di dune: un arco chiaro con l'ombra subito sotto.
-    for (let i = 0; i < 3; i++) {
-      const y0 = TOP + 8 + i * 8 + v * 2, x0 = 4 + ((i + v) % 2) * 6
-      for (let x = x0; x < x0 + 16; x++) {
-        const y = y0 + Math.round(Math.sin((x - x0) / 5) * 2)
-        if (inHex(x, y) && inHex(x, y + 1) && inHex(x, y - 1)) { c.px(x, y, "a"); c.px(x, y + 1, "z") }
-      }
-    }
-  })
-  sprite(`swamp_${v}`, { w: W, h: H },
-    (c) => { ground(c, "m", "L", "M"); patches(c, "M", v + 25, 5, 0.32) },
-    ...spots(71 + v, 3, 4).map(([x, y]) => stamp("_pool", x - 4, y - 1)),
-    ...spots(81 + v, 4, 2).map(([x, y]) => stamp("_reed", x, y - 4)))
-  sprite(`tundra_${v}`, { w: W, h: H },
-    (c) => { ground(c, "W", "w", "v"); patches(c, "w", v + 29, 6, 0.3) },
-    ...spots(91 + v, 2, 3).map(([x, y]) => stamp("_rock", x, y)),
-    ...[[10, 32 + v * 3], [21, 38 - v * 2]].map(([x, y]) => stamp("_pine", x, y)))
+  sprite(`hills_top_${v}`, { w: S, h: S + TOP }, ...HILLS[v].map(([name, x, y]) => stamp(name, x, y)))
+  sprite(`tundra_top_${v}`, { w: S, h: S + TOP }, ...TUNDRA[v].map(([name, x, y]) => stamp(name, x, y)))
 }
 
-// ---------------------------------------------------------------- nebbia e selezione
+// ---------------------------------------------------------------- transizioni
 
-// Nebbia: un tratteggio con la stessa pendenza dei lati, ripetuto sul reticolo degli esagoni,
-// così le caselle coperte si fondono in un'unica distesa.
-sprite("fog", { w: W, h: H }, (c) => {
-  for (let y = TOP; y < H; y++) for (let x = 0; x < W; x++) {
-    if (!inHex(x, y)) continue
-    c.px(x, y, (((x - 2 * y) % 16) + 16) % 16 === 0 ? "D" : "F")
+// Il bioma vicino entra nel bordo con una fascia frastagliata, che sfuma a scacchiera.
+// Colori della fascia per ogni bioma che può sconfinare: base e un tono per i punti.
+const EDGE = {
+  shallow_water: ["c", "C"], swamp: ["m", "M"], desert: ["A", "a"], plains: ["g", "G"],
+  hills: ["g", "e"], tundra: ["W", "w"], forest: ["G", "h"], mountains: ["S", "K"],
+}
+Object.entries(EDGE).forEach(([biome, [base, dot]], b) => {
+  for (let d = 0; d < 6; d++) {
+    sprite(`edge_${biome}_${d}`, { w: S, h: S }, (c) => {
+      for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+        if (!inHex(x, y)) continue
+        const { dist, along } = edgeDist(d, x, y)
+        const depth = 2.5 + vnoise(along * 5 + b * 3.7 + d * 1.3, b + d * 0.7) * 3.5
+        if (dist < depth - 1) c.px(x, y, hash(x + d * 40, y + b * 40) < 0.12 ? dot : base)
+        else if (dist < depth + 1 && bayer(x, y) < 0.5 - (dist - depth) * 0.2) c.px(x, y, base)
+      }
+    })
   }
 })
 
-sprite("select", { w: W, h: H }, (c) => {
-  for (let y = TOP; y < H; y++) for (let x = 0; x < W; x++) {
+// Costa vista dall'acqua: una spiaggia stretta e una riga di schiuma che si sfrangia.
+for (let d = 0; d < 6; d++) {
+  sprite(`shore_${d}`, { w: S, h: S }, (c) => {
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+      if (!inHex(x, y)) continue
+      const { dist, along } = edgeDist(d, x, y)
+      const sand = 1.2 + vnoise(along * 6 + d * 2.1, d) * 1.8
+      if (dist < sand - 0.6) c.px(x, y, "a")
+      else if (dist < sand + 0.4) c.px(x, y, "A")
+      else if (dist < sand + 1.4) c.px(x, y, "f")
+      else if (dist < sand + 3.5 && bayer(x, y) < 0.3 - (dist - sand - 1.4) * 0.12) c.px(x, y, "f")
+    }
+  })
+}
+
+// ---------------------------------------------------------------- griglia e selezione
+
+// Solo i lati ovest, nord-ovest e nord-est: ogni lato della mappa viene disegnato una volta.
+sprite("grid", { w: S, h: S }, (c) => {
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    if (!inHex(x, y)) continue
+    if ((y < 24 && !inHex(x - 1, y)) || (y < 8 && !inHex(x, y - 1))) c.px(x, y, "w")
+  }
+})
+
+sprite("select", { w: S, h: S }, (c) => {
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
     if (!inHex(x, y)) continue
     const edge = !inHex(x, y - 1) || !inHex(x, y + 1) || !inHex(x - 1, y) || !inHex(x + 1, y)
     const near = !inHex(x, y - 2) || !inHex(x, y + 2) || !inHex(x - 2, y) || !inHex(x + 2, y)
@@ -273,6 +311,35 @@ sprite("select", { w: W, h: H }, (c) => {
     else if (near) c.px(x, y, "Z")
   }
 })
+
+// ---------------------------------------------------------------- nuvole
+
+// Sotto, un velo uniforme che copre la casella; sopra, un batuffolo che sborda sui vicini.
+// I batuffoli di caselle vicine si sovrappongono e formano un mare di nuvole.
+sprite("cloud_base", { w: S, h: S }, (c) => {
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) if (inHex(x, y)) c.px(x, y, "x")
+})
+
+// Un cumulo di lobi rotondi, dal fondo al davanti: ognuno chiaro in alto a sinistra e in ombra
+// sotto, così i lobi davanti si staccano da quelli dietro.
+function cloud(name, w, h, lobes) {
+  sprite(name, { w, h, pivot: "center" }, (c) => {
+    for (const [cx, cy, r] of lobes) {
+      for (let y = Math.floor(cy - r); y <= cy + r; y++) for (let x = Math.floor(cx - r); x <= cx + r; x++) {
+        const nx = (x + 0.5 - cx) / r, ny = (y + 0.5 - cy) / r
+        if (nx * nx + ny * ny > 1 || x < 0 || y < 0 || x >= w || y >= h) continue
+        const v = -nx * 0.45 - ny * 0.9 + (bayer(x, y) - 0.5) * 0.15
+        c.px(x, y, v > 0.35 ? "w" : v > -0.35 ? "x" : v > -0.78 ? "j" : "J")
+      }
+    }
+  })
+}
+cloud("cloud_0", 44, 28, [[10, 17, 8], [22, 13, 11], [34, 17, 8], [16, 20, 7], [29, 20, 7]])
+cloud("cloud_1", 44, 28, [[12, 15, 9], [27, 12, 10], [36, 18, 7], [20, 20, 7], [9, 21, 6]])
+cloud("cloud_2", 44, 28, [[9, 18, 7], [19, 12, 9], [31, 14, 10], [24, 21, 7], [37, 20, 6]])
+cloud("cloud_3", 44, 28, [[14, 13, 10], [28, 16, 9], [8, 20, 6], [21, 21, 7], [36, 21, 6]])
+cloud("cloud_4", 56, 34, [[12, 21, 9], [26, 15, 13], [42, 19, 10], [19, 25, 8], [34, 25, 8], [48, 25, 6]])
+cloud("cloud_5", 56, 34, [[10, 23, 8], [22, 16, 11], [37, 14, 12], [47, 22, 8], [28, 25, 8], [15, 27, 6]])
 
 // ---------------------------------------------------------------- sede della gilda
 
@@ -291,32 +358,10 @@ sprite("guild", { w: 22, h: 22, outline: "k", pivot: "bottom" },
   hline(0, 9, 22, "O"),
   vline(1, 11, 4, "O"), rect(0, 14, 3, 3, "y"), px(1, 15, "z"))            // insegna
 
-// ---------------------------------------------------------------- foglio e anteprima
+// ---------------------------------------------------------------- foglio
 
 sheet("tiles", [
   "deep_water_*", "shallow_water_*", "plains_*", "forest_*", "hills_*", "mountains_*",
-  "swamp_*", "desert_*", "tundra_*", "fog", "select", "guild",
+  "swamp_*", "desert_*", "tundra_*", "edge_*", "shore_*", "grid", "select",
+  "cloud_*", "guild",
 ], { pad: 1 })
-
-// Un pezzo di mappa per controllare come si incastrano: righe dall'alto in basso.
-const PREVIEW = [
-  "ddsssppff",
-  "dsppffmmh",
-  "spppfmmmh",
-  "sxxpfhmhp",
-  "dsxxpppfp",
-  "ddsttppnn",
-  "dssttFFnn",
-]
-const KIND = {
-  d: ["deep_water", 2], s: ["shallow_water", 2], p: ["plains", 3], f: ["forest", 3],
-  h: ["hills", 2], m: ["mountains", 3], x: ["swamp", 2], t: ["desert", 2], n: ["tundra", 2],
-}
-scene("preview", { w: 16 + 9 * 32, h: 16 + 6 * 24 + 32, bg: "k" },
-  ...PREVIEW.flatMap((line, row) => [...line].map((ch, col) => {
-    const at = [col * 32 + (row % 2) * 16, row * 24]
-    if (ch === "F") return stamp("fog", ...at)
-    const [kind, variants] = KIND[ch]
-    return stamp(`${kind}_${(row * 7 + col * 3) % variants}`, ...at)
-  })),
-  stamp("guild", 4 * 32 + 16 + 16, 3 * 24 + 16 + 26))

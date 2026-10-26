@@ -31,10 +31,13 @@
   });
   $effect(() => {
     void game.fogVersion;
-    view?.refreshFog();
+    view?.refreshFog(game.revealFrom);
   });
   $effect(() => {
     view?.setFogEnabled(game.fogEnabled);
+  });
+  $effect(() => {
+    view?.setGridEnabled(game.gridEnabled);
   });
   $effect(() => {
     view?.select(game.selected);
