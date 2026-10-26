@@ -20,6 +20,12 @@
   const TICK_MS = 250;
   const DRAWER_TITLES = { units: "units.title", guild: "guild.title", options: "options.title" } as const;
 
+  /** C'è qualcosa da mostrare nella scheda: un personaggio che esiste ancora, o una casella. */
+  let hasSelection = $derived.by(() => {
+    void game.version;
+    return game.selectedHex !== undefined || game.world?.state.characters.some((c) => c.id === game.selectedId) === true;
+  });
+
   let host: HTMLDivElement;
   let view = $state<MapView | undefined>();
   /** Se il gioco non riesce a partire, il motivo: meglio un messaggio che uno schermo vuoto. */
@@ -136,7 +142,7 @@
   {/if}
   <div class="stage">
     <div class="corner"><Resources /></div>
-    {#if game.selectedId !== undefined || game.selectedHex}
+    {#if hasSelection}
       <ContextPanel />
     {/if}
   </div>

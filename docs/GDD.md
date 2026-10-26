@@ -1,4 +1,4 @@
-# Documento di design (bozza v0.12)
+# Documento di design (bozza v0.13)
 
 > Stato: bozza stabile per partire. I dettagli (luoghi, dungeon, ricette, ricerche) si definiscono
 > tappa per tappa. Il piano tecnico è in [TECH.md](TECH.md).
@@ -71,7 +71,8 @@ linee di produzione e vende alle città sparse sulla mappa.
   foreste (non sopra le montagne). Con Occhio 7 o più si vede una casella in più. La sede vede
   come un personaggio sulla sua casella.
 - [Proposta] La gilda parte con due esploratori (un Cartiglio e uno di un'altra etnia), un
-  costruttore micelide e una carovaniera o un carovaniere lumacaio.
+  costruttore micelide e una carovaniera o un carovaniere lumacaio. I mercenari si trovano nelle
+  locande (§7).
 - [Proposta] Avamposti:
   - li fonda un costruttore: va sulla casella, paga 60 monete e ci lavora 4 ore di gioco (3 se
     ha il talento del mestiere, come i Micelidi); intanto resta sul cantiere;
@@ -158,6 +159,11 @@ Il giocatore assolda personaggi già fatti, non li crea. Quattro mestieri:
 - [Deciso] La storia continua: viaggi e dungeon aggiungono capitoli nuovi (per i Cocciai,
   nuove cicatrici d'oro).
 - [Deciso] Il testo si compone da frammenti tradotti in italiano e inglese.
+- [Deciso] Ogni personaggio ha un nome e un soprannome della sua etnia (Brunilde Sbeccata,
+  Folio Bianco); l'origine gli dà un bioma in cui si muove bene.
+- [Proposta] Le tabelle della prima versione: 7 origini (una per bioma di terra), 10 mestieri
+  precedenti (+1 a una statistica), 8 eventi segnanti (un tratto, con un effetto da −1 a +1), 8
+  manie (−1 a una statistica, o solo una stranezza).
 - Esempi:
 
   > **Brunilde Sbeccata**, cocciaia, mercenaria. Nata nelle fornaci delle colline rosse. Per
@@ -201,13 +207,20 @@ Il giocatore assolda personaggi già fatti, non li crea. Quattro mestieri:
   nuovo.
 - [Deciso] Il bottino: monete, materie rare che si trovano solo nei dungeon, reperti per le
   ricerche (§9) e oggetti da equipaggiare (§6).
-- [Proposta] Assoldare: ogni cittadina ha una **locanda** con 2 o 3 personaggi già fatti, di
-  qualsiasi mestiere, con la loro storia in quattro capitoli (§6); cambiano ogni 2 giorni di
-  gioco. L'ingaggio costa da 40 a 150 monete secondo le statistiche; il nuovo arrivato parte
-  dalla cittadina. La gilda parte senza mercenari: il primo si trova in una locanda.
-- [Proposta] La spedizione: una squadra da 1 a 3 mercenari va all'ingresso e il giocatore sceglie
-  fino a che livello scendere. Ogni livello dura 2 ore di gioco. Per ogni livello si tira la
-  riuscita: forza della squadra (Vigore, Fegato e armi) contro la difficoltà del livello.
+- [Deciso] Assoldare: ogni cittadina ha una **locanda** con 2 o 3 personaggi già fatti, di
+  qualsiasi mestiere (spesso mercenari), con la loro storia in quattro capitoli (§6); cambiano
+  ogni 2 giorni di gioco. L'ingaggio costa da 40 a 150 monete secondo le statistiche (dieci
+  monete per punto oltre i 18, venti in più se ha il talento del suo mestiere); il nuovo
+  arrivato parte dalla cittadina. La gilda parte senza mercenari: il primo si trova in una
+  locanda.
+- [Deciso] La paga: ogni personaggio chiede una paga, ogni giorno; se non lo paghi se ne va.
+- [Proposta] La paga è un ventesimo del costo d'ingaggio (da 2 a 8 monete al giorno) e si
+  paga ogni mattina alle 8, in ordine di arrivo nella gilda, finché bastano le monete; chi resta
+  senza paga due volte di fila se ne va, e lascia nel forziere quello che aveva addosso.
+- [Deciso] La spedizione: una squadra da 1 a 3 mercenari va all'ingresso (ognuno con il suo
+  passo; quando ci sono tutti entra) e il giocatore sceglie fino a che livello scendere. Ogni
+  livello dura 2 ore di gioco. Per ogni livello si tira la riuscita: forza della squadra
+  (Vigore, Fegato e armi) contro la difficoltà del livello.
   - riuscito: il bottino del livello è della squadra, e si scende al successivo;
   - fallito: la squadra risale con quello che ha trovato fin lì; ognuno rischia una ferita
     (meno con l'armatura): fermo alla sede per un giorno di gioco. Raramente un ferito non
@@ -216,12 +229,20 @@ Il giocatore assolda personaggi già fatti, non li crea. Quattro mestieri:
     in più nella storia.
 - [Proposta] Da 2 a 4 livelli per dungeon, più profondi lontano dalla sede; difficoltà e bottino
   crescono con la profondità. Un livello ripulito si ripopola dopo 7 giorni di gioco.
+- [Proposta] I numeri della prima versione:
+  - riuscita = forza / (forza + difficoltà); la difficoltà del livello N è 4 + 6×N; ogni punto
+    d'arma vale due di forza (un mercenario medio da solo ha circa una possibilità su due al
+    primo livello, una squadra di tre circa tre su quattro);
+  - se un livello va male, ognuno ha il 50% di ferirsi (−10% per punto d'armatura) e un ferito
+    ha il 12% di non tornare (−3% per punto d'armatura); un Cocciaio ferito ha il 50% di prendere
+    una cicatrice d'oro;
+  - bottino di un livello N: da 10 a 25 monete × N, da 1 a 2 unità × N di una materia rara, un
+    oggetto con il 25% + 10%×N (di più se la squadra ha l'Occhio buono), un reperto con il
+    10% + 10%×N.
 - [Proposta] Prime materie dei dungeon, un po' strane come le etnie: **ferro lunare** (pallido,
   pesa la metà), **cristallo d'eco** (ripete l'ultimo suono che ha sentito), **muschio
-  lucente** (fa luce per anni), **seta d'ombra**. Entrano in ricette nuove, da definire con la
-  tappa (per esempio muschio lucente + vetro → lanterne perpetue).
+  lucente** (fa luce per anni), **seta d'ombra**. Entrano in quattro ricette nuove (§8).
 - [Proposta] Il drago resta per la tappa 6, con le condizioni di vittoria.
-- [Aperto] Una paga giornaliera per i personaggi, oltre all'ingaggio.
 
 ## 8. Linee di produzione e mercato
 
@@ -250,13 +271,19 @@ Il giocatore assolda personaggi già fatti, non li crea. Quattro mestieri:
   | Vetreria | 2 sabbia, 1 carbone | 1 vetro | 2 |
   | Conceria | 2 pelli, 1 erbe | 2 cuoio | 2 |
   | Erboristeria | 3 erbe | 1 unguento | 2 |
+  | Fonderia lunare | 1 ferro lunare, 1 carbone | 1 acciaio lunare | 2 |
+  | Carillonaio | 1 cristallo d'eco, 1 asse | 1 carillon | 2 |
+  | Lanternaio | 1 muschio lucente, 1 vetro | 1 lanterna perpetua | 2 |
+  | Sartoria d'ombra | 1 seta d'ombra, 1 cuoio | 1 mantello d'ombra | 3 |
 
   La catena più lunga per ora arriva agli attrezzi: legname → carbone e assi, ferro grezzo +
   carbone → lingotti, lingotti + assi → attrezzi. Le materie dei dungeon (tappa 5) allungheranno
   le catene.
 - [Proposta] Ogni materia ha un valore di base in monete, che cresce lungo le catene: grano,
   legname e argilla 2, sabbia 1, ferro grezzo, erbe e pelli 3; farina 5, pane 6, assi 5,
-  carbone 3, mattoni 4, lingotti di ferro 12, attrezzi 26, vetro 8, cuoio 7, unguento 13.
+  carbone 3, mattoni 4, lingotti di ferro 12, attrezzi 26, vetro 8, cuoio 7, unguento 13; dai
+  dungeon ferro lunare 14, cristallo d'eco 18, muschio lucente 12, seta d'ombra 20; acciaio
+  lunare 30, carillon 45, lanterna perpetua 40, mantello d'ombra 55.
 - [Proposta] Commercio con le carovane:
   - lo fa il carovaniere: parte dalla sede con il carico scelto dal magazzino, vende tutto alla
     cittadina e torna; oppure va a un mercato, compra e torna a scaricare in magazzino; durante
@@ -306,7 +333,7 @@ Vedi [TECH.md](TECH.md).
 2. Sede della gilda, motore a eventi, primi esploratori sulla mappa. (fatta)
 3. Avamposti e materie prime; prime linee di produzione. (fatta)
 4. Città, mercato e carovane. (fatta)
-5. Mercenari e dungeon.
+5. Mercenari e dungeon. (fatta)
 6. Albero tecnologico, gilde rivali IA, condizioni di vittoria: primo single player completo.
 7. Multiplayer con lobby.
 8. Espansione: fazioni.

@@ -10,7 +10,7 @@ import {
 import { formatDuration } from "./format";
 
 /** Cosa sta facendo un personaggio, a grandi linee: decide il colore del pallino. */
-export type Activity = "idle" | "moving" | "building" | "trading";
+export type Activity = "idle" | "moving" | "building" | "trading" | "dungeon" | "wounded";
 
 export interface UnitStatus {
   readonly activity: Activity;
@@ -22,6 +22,17 @@ export function unitStatus(world: World, c: Character, realNow: number, t: Trans
   const { clock } = world.state;
   const wait = (gameTime: number) => formatDuration(t, realDelay(clock, gameTime, realNow));
   const task = c.task;
+  if (c.woundedUntil !== null && c.woundedUntil > world.state.time) {
+    return { activity: "wounded", text: t("status.wounded", { gender: c.gender, eta: wait(c.woundedUntil) }) };
+  }
+  if (task?.kind === "expedition") {
+    const e = world.state.expeditions.find((x) => x.id === task.expeditionId);
+    const place = world.map.places.find((p) => p.id === e?.placeId)?.name ?? "";
+    const arrival = estimateArrival(world, c);
+    if (arrival !== null) return { activity: "dungeon", text: t("status.toDungeon", { place, eta: wait(arrival) }) };
+    if (e && e.level > 0) return { activity: "dungeon", text: t("status.inDungeon", { place, level: e.level, depth: e.depth }) };
+    return { activity: "dungeon", text: t("status.waitingSquad", { place }) };
+  }
   if (task?.kind === "building") {
     const outpost = world.state.outposts.find((o) => o.id === task.outpostId);
     if (outpost?.readyAt) {

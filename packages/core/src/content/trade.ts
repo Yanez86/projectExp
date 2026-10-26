@@ -12,6 +12,10 @@ export const MATERIAL_VALUE: Record<MaterialId, number> = {
   herbs: 3,
   sand: 1,
   hides: 3,
+  moon_iron: 14,
+  echo_crystal: 18,
+  glowmoss: 12,
+  shadow_silk: 20,
   flour: 5,
   bread: 6,
   planks: 5,
@@ -22,6 +26,10 @@ export const MATERIAL_VALUE: Record<MaterialId, number> = {
   glass: 8,
   leather: 7,
   salve: 13,
+  moon_steel: 30,
+  music_box: 45,
+  everlamp: 40,
+  shadow_cloak: 55,
 };
 
 /** Quanto porta un carovaniere: una base più due unità per punto di Vigore; con il talento, la metà in più. */

@@ -8,6 +8,7 @@
     STORAGE_CAPACITY,
     WORKSHOP_COST,
     WORKSHOP_SLOTS,
+    dailyWages,
     nextHarvest,
     realDelay,
     workshopStatus,
@@ -18,6 +19,7 @@
   import { formatDuration } from "../lib/format";
   import { game } from "../lib/game.svelte";
   import { i18n } from "../lib/i18n.svelte";
+  import { itemBonus } from "../lib/names";
   import Token from "./Token.svelte";
 
   // La simulazione modifica lo stato sul posto: a ogni versione si rilegge tutto.
@@ -30,6 +32,9 @@
       world,
       clock,
       gold: guild.gold,
+      wages: dailyWages(world),
+      relics: guild.relics,
+      items: guild.items.map((i) => ({ ...i })),
       stock: MATERIAL_IDS.filter((m) => guild.stock[m] > 0).map((m) => ({ id: m, amount: guild.stock[m] })),
       outposts: outposts.map((o) => ({ ...o })),
       workshops: workshops.map((w) => ({ ...w })),
@@ -79,7 +84,10 @@
 
 <div class="guild">
   {#if view}
-    <p class="gold"><Token name="coin" scale={2} />{i18n.t("gold", { n: view.gold })}</p>
+    <p class="gold">
+      <Token name="coin" scale={2} />{i18n.t("gold", { n: view.gold })}
+      <span class="muted small">· {i18n.t("guild.wages", { gold: i18n.t("gold", { n: view.wages }) })}</span>
+    </p>
     <h3>{i18n.t("guild.storage")}</h3>
     {#if view.stock.length === 0}
       <p class="muted">{i18n.t("guild.storage.empty")}</p>
@@ -145,6 +153,25 @@
     {:else}
       <button type="button" class="add" onclick={() => (adding = true)}>+ {i18n.t("guild.workshops.add")}</button>
     {/if}
+
+    <h3>{i18n.t("guild.chest")}</h3>
+    {#if view.relics > 0}
+      <p class="gold"><Token name="ui_relic" scale={2} />{i18n.t("relics", { n: view.relics })}</p>
+    {/if}
+    {#if view.items.length === 0}
+      <p class="muted">{i18n.t("guild.chest.empty")}</p>
+    {/if}
+    <ul class="rows">
+      {#each view.items as item (item.id)}
+        <li>
+          <Token name="item_{item.kind}" scale={2} />
+          <div class="body">
+            <strong>{i18n.t(`item.${item.kind}`)}</strong>
+            <span class="status">{i18n.t(`rarity.${item.rarity}`)} · {itemBonus(i18n.t, item)}</span>
+          </div>
+        </li>
+      {/each}
+    </ul>
 
     <h3>{i18n.t("guild.outposts")}</h3>
     {#if view.outposts.length === 0}

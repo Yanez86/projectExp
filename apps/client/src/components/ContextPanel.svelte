@@ -14,6 +14,8 @@
     placeAt,
     previewRoute,
     priceList,
+    effectiveStats,
+    wage,
     realDelay,
     type Hex,
     type BuildProblem,
@@ -24,7 +26,13 @@
   import { formatDuration } from "../lib/format";
   import { game } from "../lib/game.svelte";
   import { i18n } from "../lib/i18n.svelte";
+  import { fullName } from "../lib/names";
   import { unitStatus } from "../lib/status";
+  import DungeonSection from "./DungeonSection.svelte";
+  import EquipmentSection from "./EquipmentSection.svelte";
+  import ExpeditionForm from "./ExpeditionForm.svelte";
+  import StorySection from "./StorySection.svelte";
+  import TavernSection from "./TavernSection.svelte";
   import Token from "./Token.svelte";
   import TradeForm from "./TradeForm.svelte";
 
@@ -71,6 +79,14 @@
     return outpost ? { ...outpost } : undefined;
   });
   let status = $derived(world && character ? unitStatus(world, character, game.now, i18n.t) : undefined);
+  /** Le statistiche con l'equipaggiamento: un ninnolo alza la sua. */
+  let effective = $derived(character ? effectiveStats(character) : undefined);
+  /** Se il mercenario selezionato può organizzare una spedizione nel dungeon della casella selezionata. */
+  let dungeonPlace = $derived.by(() => {
+    const place = hexInfo?.place;
+    if (!character || character.job !== "mercenary" || character.task || place?.kind !== "dungeon") return undefined;
+    return place;
+  });
   /** Se il carovaniere selezionato può commerciare nel luogo della casella selezionata. */
   let tradePlace = $derived.by(() => {
     const place = hexInfo?.place;
@@ -141,10 +157,11 @@
     <header>
       <Token name="char_{character.ethnicity}" />
       <div class="title">
-        <h2>{character.name}</h2>
+        <h2>{fullName(i18n.t, character)}</h2>
         <p>
           {i18n.t(`job.${character.job}`, { gender: character.gender })} ·
-          {i18n.t(`ethnicity.${character.ethnicity}`, { gender: character.gender })}
+          {i18n.t(`ethnicity.${character.ethnicity}`, { gender: character.gender })} ·
+          {i18n.t("wage", { gold: wage(character) })}
         </p>
       </div>
       {@render close()}
@@ -152,9 +169,16 @@
     <p class="status">{status?.text}</p>
     <dl class="stats">
       {#each STAT_IDS as stat (stat)}
-        <div><dt>{i18n.t(`stat.${stat}`)}</dt><dd>{character.stats[stat]}</dd></div>
+        <div>
+          <dt>{i18n.t(`stat.${stat}`)}</dt>
+          <dd class:boosted={effective && effective[stat] > character.stats[stat]}>{effective?.[stat] ?? character.stats[stat]}</dd>
+        </div>
       {/each}
     </dl>
+    {#if !hexInfo}
+      <EquipmentSection {character} />
+      <StorySection {character} />
+    {/if}
     {#if hexInfo}
       <p class="target" class:dim={hexInfo.dim}>
         {#if hexInfo.place}
@@ -168,6 +192,10 @@
       {#if tradePlace}
         {#key tradePlace.id}
           <TradeForm {character} place={tradePlace} />
+        {/key}
+      {:else if dungeonPlace}
+        {#key `${dungeonPlace.id}/${character.id}`}
+          <ExpeditionForm {character} place={dungeonPlace} />
         {/key}
       {:else if hexInfo.place}
         <p class="about">{i18n.t(`place.${hexInfo.place.kind}.about`)}</p>
@@ -183,25 +211,27 @@
       {:else if site}
         <p class="warn">{i18n.t("build.blocked", { reason: i18n.t(`reason.${site.reason}`) })}</p>
       {/if}
-      {#if building || character.task?.kind === "trade"}
-        <!-- Sul cantiere, o in viaggio per commerciare, non prende altri ordini. -->
+      {#if building || character.task?.kind === "trade" || character.task?.kind === "expedition" || status?.activity === "wounded"}
+        <!-- Sul cantiere, in viaggio per commerciare, in spedizione o ferito, non prende altri ordini. -->
       {:else if preview === null}
         <p class="warn">{i18n.t("route.unreachable")}</p>
       {:else if preview?.here}
         {#if !site?.ok}<p class="hint">{i18n.t("route.here")}</p>{/if}
       {:else if preview}
-        <button type="button" class:primary={!site?.ok && !tradePlace} onclick={() => game.sendSelected()}>
+        <button type="button" class:primary={!site?.ok && !tradePlace && !dungeonPlace} onclick={() => game.sendSelected()}>
           {i18n.t("action.send", { eta: formatDuration(i18n.t, preview.real) })}
         </button>
       {/if}
-    {:else if character.destination && character.task?.kind !== "trade"}
+    {:else if character.destination && !character.task}
       <button type="button" onclick={() => game.stopSelected()}>{i18n.t("action.stop")}</button>
-    {:else if !building && !character.task}
+    {:else if !building && !character.task && status?.activity !== "wounded"}
       <p class="hint">
         {#if character.job === "builder"}
           {i18n.t("hint.build")}
         {:else if character.job === "caravaneer"}
           {i18n.t("hint.trade")}
+        {:else if character.job === "mercenary"}
+          {i18n.t("hint.dungeon")}
         {:else}
           {i18n.t("hint.send", { gender: character.gender })}
         {/if}
@@ -218,6 +248,16 @@
     </header>
     <p class="about">{i18n.t(`place.${hexInfo.place.kind}.about`)}</p>
     {@render featured(hexInfo.place)}
+    {#if hexInfo.place.kind === "town"}
+      {#key hexInfo.place.id}
+        <TavernSection place={hexInfo.place} />
+      {/key}
+    {:else if hexInfo.place.kind === "dungeon"}
+      <DungeonSection place={hexInfo.place} />
+      {#if !world?.state.characters.some((c) => c.job === "mercenary")}
+        <p class="hint">{i18n.t("dungeon.noMercenaries")}</p>
+      {/if}
+    {/if}
   {:else if hexInfo}
     <header>
       <div class="title">
@@ -239,6 +279,8 @@
 <style>
   .panel {
     width: min(340px, 100%);
+    max-height: 100%;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -292,6 +334,10 @@
     margin: 0;
     color: var(--text);
     font-weight: 600;
+  }
+
+  dd.boosted {
+    color: var(--accent);
   }
 
   .target {

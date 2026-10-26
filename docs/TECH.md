@@ -1,6 +1,6 @@
 # Piano tecnico (bozza v0.1)
 
-> Stato: approvato; prime quattro tappe fatte. Il design del gioco è in [GDD.md](GDD.md).
+> Stato: approvato; prime cinque tappe fatte. Il design del gioco è in [GDD.md](GDD.md).
 
 ## 1. Obiettivi
 
@@ -185,6 +185,32 @@ le nuvole coprono ciò che non è stato esplorato.
   cercate o vendute. Con un'unità selezionata, toccare una casella dove ci sono altri ne fa la
   destinazione; per scegliere un'altra unità c'è l'elenco Unità.
 
-## 12. Domande aperte
+## 12. Quinta tappa: mercenari, dungeon, equipaggiamento e paga (fatta)
+
+- `core`: le storie dei personaggi (`content/stories.ts`: tabelle dei quattro capitoli con i loro
+  effetti) e la loro creazione (`sim/characters.ts`: nome, soprannome, storia, statistiche;
+  costo d'ingaggio e paga; statistiche con l'equipaggiamento, usate da passo, vista e carico).
+  L'origine passa al calcolo dei passi come bioma congeniale in più.
+- Paga (`sim/payroll.ts`): un evento `payday` ogni giorno; chi resta senza paga due volte se ne
+  va. Un personaggio che se ne va (o non torna) viene tolto dalla lista: gli eventi che lo
+  riguardano trovano che non c'è più e non fanno niente.
+- Locanda (`sim/tavern.ts`): chi c'è nasce dal seme, dalla cittadina e dal periodo di due giorni,
+  come i prezzi; si salvano solo gli ingaggi già fatti. I nomi evitano quelli di chi è già nella
+  gilda.
+- Equipaggiamento (`content/items.ts`, `sim/equipment.ts`): oggetti con numero, tipo e rarità;
+  forziere della gilda; si cambia alla sede, da fermi.
+- Dungeon (`content/dungeons.ts`, `sim/dungeon.ts`): i livelli dipendono dalla distanza dalla
+  sede; si salvano solo i livelli ripuliti, con l'ora. La spedizione è un oggetto con la
+  squadra e il bottino; i membri hanno il compito `expedition` e, quando sono tutti
+  all'ingresso, un evento `delve` ogni due ore risolve un livello con un generatore che nasce
+  da seme, spedizione e livello. Ferite con un evento `healed`. Salvataggi alla versione 4.
+- `client`: nella scheda dell'unità il nome con il soprannome, la paga, le statistiche con il
+  bonus dell'equipaggiamento, gli slot (e la scelta dal forziere, alla sede) e la storia; nella
+  scheda di una cittadina la locanda; in quella di un dungeon i livelli; per un mercenario il
+  modulo della spedizione (squadra, profondità, probabilità di ogni livello); nella sede la
+  paga del giorno, i reperti e il forziere. Il segnalino di chi arriva o se ne va compare o
+  sparisce dalla mappa.
+
+## 13. Domande aperte
 
 1. Su mobile il gioco va solo in orizzontale o anche in verticale?

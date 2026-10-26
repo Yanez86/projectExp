@@ -20,6 +20,7 @@
     }
     return {
       gold: guild.gold,
+      relics: guild.relics,
       materials: MATERIAL_IDS.filter((m) => guild.stock[m] > 0 || used.includes(m)).map((m) => ({ id: m, amount: guild.stock[m] })),
     };
   });
@@ -32,6 +33,13 @@
       <span class="amount">{view.gold}</span>
       <span class="visually-hidden">{i18n.t("gold", { n: view.gold })}</span>
     </li>
+    {#if view.relics > 0}
+      <li title={i18n.t("relics", { n: view.relics })}>
+        <Token name="ui_relic" scale={2} />
+        <span class="amount">{view.relics}</span>
+        <span class="visually-hidden">{i18n.t("relics", { n: view.relics })}</span>
+      </li>
+    {/if}
     {#each view.materials as m (m.id)}
       <li class:full={m.amount >= STORAGE_CAPACITY} title={i18n.t(`material.${m.id}`)}>
         <Token name="mat_{m.id}" scale={2} />

@@ -2,6 +2,7 @@ import { neighbors, hexEquals, distance, type Hex } from "../hex";
 import { stepDuration, fastestStep } from "../content/movement";
 import { FOG_UNEXPLORED, type Fog } from "../map/fog";
 import { biomeIdAt, tileIndex, type WorldMap } from "../map/world";
+import { effectiveStats } from "./characters";
 import type { Character } from "./state";
 
 /**
@@ -12,7 +13,7 @@ export function knownStepDuration(map: WorldMap, fog: Fog, character: Character,
   const i = tileIndex(map, h);
   if (i < 0) return null;
   const known = fog.state[i] !== FOG_UNEXPLORED;
-  return stepDuration(character.ethnicity, character.stats.pace, known ? biomeIdAt(map, h) : undefined);
+  return stepDuration(character.ethnicity, effectiveStats(character).pace, known ? biomeIdAt(map, h) : undefined, character.story.origin);
 }
 
 /** Coda con priorità minima su un array: abbastanza per le mappe del gioco. */
@@ -71,7 +72,7 @@ class MinHeap<T> {
 export function findRoute(map: WorldMap, fog: Fog, character: Character, from: Hex, to: Hex): Hex[] | null {
   if (hexEquals(from, to)) return [];
   if (knownStepDuration(map, fog, character, to) === null) return null;
-  const minStep = fastestStep(character.stats.pace);
+  const minStep = fastestStep(effectiveStats(character).pace);
   const start = tileIndex(map, from);
   const goal = tileIndex(map, to);
   if (start < 0 || goal < 0) return null;

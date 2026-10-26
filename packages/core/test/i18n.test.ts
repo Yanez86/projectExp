@@ -8,6 +8,8 @@ import { MATERIAL_IDS } from "../src/content/materials";
 import { OUTPOST_KINDS } from "../src/content/outposts";
 import { PLACE_KINDS } from "../src/content/places";
 import { RECIPE_IDS } from "../src/content/recipes";
+import { ITEM_KINDS, SLOTS } from "../src/content/items";
+import { EPITHETS, EVENT_IDS, MANIA_IDS, ORIGIN_BIOMES, PAST_JOB_IDS } from "../src/content/stories";
 import { createTranslator, detectLocale } from "../src/i18n";
 
 const locales: Record<string, Record<string, string>> = { it: it_, en };
@@ -56,6 +58,21 @@ describe("i18n", () => {
     for (const id of ["unexplored", "water", "guild", "place", "outpost", "near-outpost", "gold"]) {
       expect(it_).toHaveProperty(`reason.${id}`);
     }
+  });
+
+  it("ha i testi di storie, soprannomi e oggetti", () => {
+    for (const id of ORIGIN_BIOMES) expect(it_).toHaveProperty(`story.origin.${id}`);
+    for (const id of PAST_JOB_IDS) expect(it_).toHaveProperty(`story.pastJob.${id}`);
+    for (const id of EVENT_IDS) {
+      expect(it_).toHaveProperty(`story.event.${id}`);
+      expect(it_).toHaveProperty(`story.trait.${id}`);
+    }
+    for (const id of MANIA_IDS) expect(it_).toHaveProperty(`story.mania.${id}`);
+    for (const [ethnicity, n] of Object.entries(EPITHETS)) {
+      for (let i = 0; i < n; i++) expect(it_).toHaveProperty(`epithet.${ethnicity}.${i}`);
+    }
+    for (const id of ITEM_KINDS) expect(it_).toHaveProperty(`item.${id}`);
+    for (const id of SLOTS) expect(it_).toHaveProperty(`slot.${id}`);
   });
 
   it("riconosce la lingua del browser", () => {

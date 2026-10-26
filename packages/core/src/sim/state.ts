@@ -1,7 +1,9 @@
-import type { EthnicityId, JobId, Stats } from "../content/ethnicities";
+import type { EthnicityId, JobId, StatId, Stats } from "../content/ethnicities";
+import type { Item, Slot } from "../content/items";
 import type { MaterialId, Stock } from "../content/materials";
 import type { OutpostKind } from "../content/outposts";
 import type { RecipeId } from "../content/recipes";
+import type { Story } from "../content/stories";
 import type { Hex } from "../hex";
 import type { Fog } from "../map/fog";
 import type { WorldMap } from "../map/world";
@@ -30,15 +32,22 @@ export type Task =
       readonly mode: "sell" | "buy";
       readonly order: readonly (readonly [MaterialId, number])[];
       readonly returning: boolean;
-    };
+    }
+  /** Parte di una squadra che va in un dungeon, o ci sta dentro. */
+  | { readonly kind: "expedition"; readonly expeditionId: number };
 
 export interface Character {
   readonly id: number;
   readonly name: string;
+  /** Il soprannome: `epithet.<etnia>.<n>` nei file di lingua. */
+  readonly epithet: number;
   readonly gender: "f" | "m";
   readonly ethnicity: EthnicityId;
   readonly job: JobId;
-  readonly stats: Stats;
+  /** Le statistiche di base: etnia più storia. L'equipaggiamento si aggiunge sopra. */
+  stats: Stats;
+  /** La storia, che continua: i dungeon possono aggiungere capitoli. */
+  story: Story;
   /** Dove si trova; durante un passo, la casella da cui è partito. */
   hex: Hex;
   /** Dove sta andando, se sta andando da qualche parte. */
@@ -49,6 +58,45 @@ export interface Character {
   task: Task | null;
   /** Le merci che porta con sé. */
   cargo: [MaterialId, number][];
+  equipment: Record<Slot, Item | null>;
+  /** Fino a quando è ferito, se lo è: intanto non prende ordini. */
+  woundedUntil: number | null;
+  /** Quante paghe di fila non ha ricevuto. */
+  unpaid: number;
+}
+
+/** Il bottino che una squadra ha raccolto finora. */
+export interface Loot {
+  gold: number;
+  materials: [MaterialId, number][];
+  items: Item[];
+  relics: number;
+}
+
+/** Una squadra di mercenari diretta a un dungeon, o dentro. */
+export interface Expedition {
+  readonly id: number;
+  readonly placeId: number;
+  members: number[];
+  /** Fino a che livello scendere. */
+  readonly depth: number;
+  /** Il livello che sta esplorando (da 1); 0 finché la squadra non è entrata. */
+  level: number;
+  readonly loot: Loot;
+}
+
+/** Un livello di un dungeon ripulito di recente. */
+export interface ClearedLevel {
+  readonly placeId: number;
+  readonly level: number;
+  clearedAt: number;
+}
+
+/** Chi è già stato ingaggiato in una locanda, in un certo periodo: non si ripresenta. */
+export interface Hire {
+  readonly placeId: number;
+  readonly period: number;
+  readonly slot: number;
 }
 
 /** Un avamposto: raccoglie la materia prima della sua casella e la manda alla gilda. */
@@ -88,13 +136,20 @@ export interface Guild {
   gold: number;
   /** Il magazzino della sede. */
   readonly stock: Stock;
+  /** Il forziere: gli oggetti che nessuno porta. */
+  items: Item[];
+  /** I reperti trovati nei dungeon, per le ricerche. */
+  relics: number;
 }
 
 /** Cosa fa un evento quando arriva il suo momento. */
 export type EventBody =
   | { readonly kind: "arrive"; readonly characterId: number }
   | { readonly kind: "outpost_ready" | "harvest"; readonly outpostId: number }
-  | { readonly kind: "workshop_ready" | "workshop_done"; readonly workshopId: number };
+  | { readonly kind: "workshop_ready" | "workshop_done"; readonly workshopId: number }
+  | { readonly kind: "payday" }
+  | { readonly kind: "delve"; readonly expeditionId: number }
+  | { readonly kind: "healed"; readonly characterId: number };
 
 /** Un evento in coda, eseguito quando il tempo di gioco arriva a `at`. */
 export type GameEvent = {
@@ -114,7 +169,27 @@ export type Notice =
   | { readonly kind: "outpost_ready"; readonly at: number; readonly outpostId: number }
   | { readonly kind: "workshop_ready"; readonly at: number; readonly workshopId: number }
   | { readonly kind: "sold" | "bought"; readonly at: number; readonly characterId: number; readonly placeId: number; readonly units: number; readonly gold: number }
-  | { readonly kind: "unloaded"; readonly at: number; readonly characterId: number; readonly units: number };
+  | { readonly kind: "unloaded"; readonly at: number; readonly characterId: number; readonly units: number }
+  | { readonly kind: "paid"; readonly at: number; readonly gold: number; readonly count: number }
+  | { readonly kind: "unpaid"; readonly at: number; readonly characterId: number; readonly days: number }
+  /** Se n'è andato (non pagato) o non è tornato da un dungeon: non è più tra i personaggi. */
+  | { readonly kind: "left" | "lost"; readonly at: number; readonly name: string; readonly gender: "f" | "m"; readonly placeId?: number }
+  | { readonly kind: "hired"; readonly at: number; readonly characterId: number; readonly placeId: number }
+  | { readonly kind: "expedition_started"; readonly at: number; readonly expeditionId: number; readonly placeId: number }
+  | {
+      readonly kind: "expedition_done";
+      readonly at: number;
+      readonly placeId: number;
+      /** I livelli ripuliti in questa spedizione, e se la squadra è arrivata fin dove doveva. */
+      readonly cleared: number;
+      readonly complete: boolean;
+      readonly gold: number;
+      readonly units: number;
+      readonly items: number;
+      readonly relics: number;
+    }
+  | { readonly kind: "wounded" | "healed"; readonly at: number; readonly characterId: number }
+  | { readonly kind: "scar"; readonly at: number; readonly characterId: number; readonly stat: StatId };
 
 /** Perché un avamposto non si può fondare in una casella. */
 export type SiteProblem = "unexplored" | "water" | "guild" | "place" | "outpost" | "near-outpost";
@@ -144,6 +219,15 @@ export interface GameState {
   readonly workshops: Workshop[];
   /** Il ricordo degli scambi recenti in cittadine e mercati. */
   readonly markets: Saturation[];
+  readonly expeditions: Expedition[];
+  /** I livelli dei dungeon ripuliti di recente. */
+  readonly cleared: ClearedLevel[];
+  /** Chi è stato ingaggiato nelle locande. */
+  readonly hires: Hire[];
+  /** I prossimi numeri liberi per personaggi, oggetti e spedizioni. */
+  nextCharacterId: number;
+  nextItemId: number;
+  nextExpeditionId: number;
   /** Eventi in attesa, in ordine di orario e di inserimento. */
   events: GameEvent[];
   nextSeq: number;

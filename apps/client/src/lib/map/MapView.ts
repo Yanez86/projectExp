@@ -307,14 +307,7 @@ export class MapView {
       shadow.destroy();
     }
     this.characters.clear();
-    for (const c of world.state.characters) {
-      const shadow = this.addSprite(this.objectLayer, this.texture("char_shadow"), 0, 0);
-      shadow.anchor.set(0.5);
-      shadow.alpha = 0.3;
-      const token = this.addSprite(this.objectLayer, this.texture(`char_${c.ethnicity}`), 0, 0);
-      token.anchor.set(0.5, 1);
-      this.characters.set(c.id, { token, shadow });
-    }
+    this.syncCharacterSprites();
     this.ring ??= this.addSprite(this.objectLayer, this.texture("char_ring"), 0, 0);
     this.ring.anchor.set(0.5);
     this.refreshCharacters();
@@ -354,10 +347,33 @@ export class MapView {
     this.refreshCharacters();
   }
 
-  /** Da chiamare quando i personaggi cambiano (un ordine, un arrivo). */
+  /** Da chiamare quando i personaggi cambiano (un ordine, un arrivo, chi arriva e chi se ne va). */
   refreshCharacters(): void {
+    this.syncCharacterSprites();
     this.updateCharacters();
     this.requestRender();
+  }
+
+  /** Un segnalino per ogni personaggio della gilda: si aggiungono i nuovi, si tolgono i partiti. */
+  private syncCharacterSprites(): void {
+    const world = this.game;
+    if (!world) return;
+    const ids = new Set(world.state.characters.map((c) => c.id));
+    for (const [id, { token, shadow }] of this.characters) {
+      if (ids.has(id)) continue;
+      token.destroy();
+      shadow.destroy();
+      this.characters.delete(id);
+    }
+    for (const c of world.state.characters) {
+      if (this.characters.has(c.id)) continue;
+      const shadow = this.addSprite(this.objectLayer, this.texture("char_shadow"), 0, 0);
+      shadow.anchor.set(0.5);
+      shadow.alpha = 0.3;
+      const token = this.addSprite(this.objectLayer, this.texture(`char_${c.ethnicity}`), 0, 0);
+      token.anchor.set(0.5, 1);
+      this.characters.set(c.id, { token, shadow });
+    }
   }
 
   /**

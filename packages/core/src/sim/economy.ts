@@ -1,5 +1,4 @@
 import { BIOMES, BIOME_IDS } from "../content/biomes";
-import { ETHNICITIES } from "../content/ethnicities";
 import { STORAGE_CAPACITY, WORKSHOP_BUILD_MS, WORKSHOP_COST, WORKSHOP_SLOTS } from "../content/guild";
 import type { MaterialId } from "../content/materials";
 import {
@@ -16,6 +15,7 @@ import { RECIPES, RECIPE_IDS, type RecipeId } from "../content/recipes";
 import { distance, hexEquals, neighbors, type Hex } from "../hex";
 import { FOG_UNEXPLORED, fogAt } from "../map/fog";
 import { biomeIdAt, inBounds, placeAt } from "../map/world";
+import { hasTalent } from "./characters";
 import { schedule } from "./events";
 import type { Character, GameState, Notice, Outpost, SiteProblem, Workshop, World } from "./state";
 
@@ -50,8 +50,7 @@ export function checkOutpostSite(world: World, h: Hex): SiteCheck {
 
 /** Quanto ci mette questo personaggio a costruire un avamposto. */
 export function buildDuration(character: Character): number {
-  const talent = ETHNICITIES[character.ethnicity].talent === character.job;
-  return (OUTPOST_BUILD_MS * (talent ? TALENT_FACTOR : 100)) / 100;
+  return (OUTPOST_BUILD_MS * (hasTalent(character) ? TALENT_FACTOR : 100)) / 100;
 }
 
 /** Il costruttore è arrivato sul posto: paga e apre il cantiere, se si può ancora. */

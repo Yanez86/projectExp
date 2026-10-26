@@ -17,6 +17,7 @@ import {
   type MaterialId,
   type Notice,
   type RecipeId,
+  type Slot,
   type World,
 } from "@exp/core";
 import { readSave, writeSave } from "./saves";
@@ -179,12 +180,68 @@ class Game {
           if (c) this.toast("notice.unloaded", { name: c.name, gender: c.gender, units: n.units });
           break;
         }
+        case "paid":
+          this.toast("notice.paid", { gold: n.gold, count: n.count });
+          break;
+        case "unpaid": {
+          const c = character(n.characterId);
+          if (c) this.toast("notice.unpaid", { name: c.name, gender: c.gender });
+          break;
+        }
+        case "left":
+        case "lost": {
+          const place = world.map.places.find((p) => p.id === n.placeId)?.name ?? "";
+          this.toast(n.kind === "left" ? "notice.left" : "notice.lost", { name: n.name, gender: n.gender, place });
+          break;
+        }
+        case "hired": {
+          const c = character(n.characterId);
+          const place = world.map.places.find((p) => p.id === n.placeId);
+          if (c && place) this.toast("notice.hired", { name: c.name, place: place.name });
+          break;
+        }
+        case "expedition_started": {
+          const place = world.map.places.find((p) => p.id === n.placeId);
+          if (place) this.toast("notice.expeditionStarted", { place: place.name });
+          break;
+        }
+        case "expedition_done": {
+          const place = world.map.places.find((p) => p.id === n.placeId);
+          const empty = n.gold + n.units + n.items + n.relics === 0;
+          if (place && empty) {
+            this.toast(n.complete ? "notice.expeditionNothing" : "notice.expeditionRetreatEmpty", { place: place.name });
+          } else if (place) {
+            this.toast(n.complete ? "notice.expeditionDone" : "notice.expeditionRetreat", {
+              place: place.name,
+              gold: n.gold,
+              units: n.units,
+              items: n.items,
+              relics: n.relics,
+            });
+          }
+          break;
+        }
+        case "wounded":
+        case "healed": {
+          const c = character(n.characterId);
+          if (c) this.toast(n.kind === "wounded" ? "notice.wounded" : "notice.healed", { name: c.name, gender: c.gender });
+          break;
+        }
+        case "scar": {
+          const c = character(n.characterId);
+          if (c) this.toast("notice.scar", { name: c.name, gender: c.gender }, { stat: `stat.${n.stat}` });
+          break;
+        }
         case "workshop_ready": {
           const w = world.state.workshops.find((x) => x.id === n.workshopId);
           if (w) this.toast("notice.workshopReady", {}, { kind: `workshop.${w.recipe}` });
           break;
         }
       }
+    }
+    // Chi se n'è andato, o non è tornato, non può restare selezionato.
+    if (this.selectedId !== undefined && !world.state.characters.some((c) => c.id === this.selectedId)) {
+      this.selectedId = undefined;
     }
     this.revealFrom = reveal;
     this.version++;
@@ -261,6 +318,35 @@ class Game {
   trade(placeId: number, mode: "sell" | "buy", goods: [MaterialId, number][]): CommandResult | undefined {
     if (this.selectedId === undefined) return undefined;
     const result = this.command({ kind: "trade", characterId: this.selectedId, placeId, mode, goods });
+    if (result?.ok) this.selectedHex = undefined;
+    return result;
+  }
+
+  /** Ingaggia chi è nella locanda di una cittadina. */
+  hire(placeId: number, slot: number): CommandResult | undefined {
+    const result = this.command({ kind: "hire", placeId, slot });
+    const world = this.world;
+    if (result?.ok && world) {
+      const c = world.state.characters.at(-1)!;
+      const place = world.map.places.find((p) => p.id === placeId)!;
+      this.toast("notice.hired", { name: c.name, place: place.name });
+    }
+    return result;
+  }
+
+  equip(itemId: number): CommandResult | undefined {
+    if (this.selectedId === undefined) return undefined;
+    return this.command({ kind: "equip", characterId: this.selectedId, itemId });
+  }
+
+  unequip(slot: Slot): CommandResult | undefined {
+    if (this.selectedId === undefined) return undefined;
+    return this.command({ kind: "unequip", characterId: this.selectedId, slot });
+  }
+
+  /** Manda una squadra di mercenari nel dungeon, fino al livello `depth`. */
+  expedition(placeId: number, members: number[], depth: number): CommandResult | undefined {
+    const result = this.command({ kind: "expedition", placeId, members, depth });
     if (result?.ok) this.selectedHex = undefined;
     return result;
   }

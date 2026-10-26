@@ -24,9 +24,10 @@ export const UNKNOWN_COST = 150;
 export const COMFORTABLE_FACTOR = 75;
 export const HARD_FACTOR = 140;
 
-export function affinityFactor(ethnicity: EthnicityId, biome: BiomeId): number {
+/** L'effetto di etnia e luogo di nascita: chi è nato in un bioma ci si muove bene. */
+export function affinityFactor(ethnicity: EthnicityId, biome: BiomeId, origin?: BiomeId): number {
   const e = ETHNICITIES[ethnicity];
-  if (e.comfortable.includes(biome)) return COMFORTABLE_FACTOR;
+  if (e.comfortable.includes(biome) || biome === origin) return COMFORTABLE_FACTOR;
   if (e.hard.includes(biome)) return HARD_FACTOR;
   return 100;
 }
@@ -35,10 +36,10 @@ export function affinityFactor(ethnicity: EthnicityId, biome: BiomeId): number {
  * Tempo di gioco (ms interi) per entrare in una casella. `biome` undefined: casella ancora
  * sconosciuta. Restituisce null se la casella non si attraversa.
  */
-export function stepDuration(ethnicity: EthnicityId, pace: number, biome: BiomeId | undefined): number | null {
+export function stepDuration(ethnicity: EthnicityId, pace: number, biome: BiomeId | undefined, origin?: BiomeId): number | null {
   const cost = biome === undefined ? UNKNOWN_COST : TERRAIN_COST[biome];
   if (cost === null) return null;
-  const affinity = biome === undefined ? 100 : affinityFactor(ethnicity, biome);
+  const affinity = biome === undefined ? 100 : affinityFactor(ethnicity, biome, origin);
   return Math.round((BASE_STEP_MS * cost * affinity * 5) / (100 * 100 * Math.max(1, pace)));
 }
 

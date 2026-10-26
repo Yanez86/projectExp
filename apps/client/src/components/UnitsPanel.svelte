@@ -1,6 +1,7 @@
 <script lang="ts">
   import { game } from "../lib/game.svelte";
   import { i18n } from "../lib/i18n.svelte";
+  import { fullName } from "../lib/names";
   import { unitStatus } from "../lib/status";
   import Token from "./Token.svelte";
 
@@ -26,7 +27,7 @@
       <button type="button" class:selected={u.id === game.selectedId} aria-pressed={u.id === game.selectedId} onclick={() => pick(u.id)}>
         <Token name="char_{u.ethnicity}" />
         <span class="body">
-          <span class="name">{u.name}</span>
+          <span class="name">{fullName(i18n.t, u)}</span>
           <span class="role">
             {i18n.t(`job.${u.job}`, { gender: u.gender })} · {i18n.t(`ethnicity.${u.ethnicity}`, { gender: u.gender })}
           </span>
@@ -110,5 +111,13 @@
 
   .dot.trading {
     background: #7fd36b;
+  }
+
+  .dot.dungeon {
+    background: #b48cf0;
+  }
+
+  .dot.wounded {
+    background: #ff7a6a;
   }
 </style>

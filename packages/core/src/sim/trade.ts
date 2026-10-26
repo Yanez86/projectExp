@@ -1,4 +1,3 @@
-import { ETHNICITIES } from "../content/ethnicities";
 import { STORAGE_CAPACITY } from "../content/guild";
 import { MATERIAL_IDS, PRODUCT_IDS, RAW_MATERIAL_IDS, type MaterialId } from "../content/materials";
 import type { Amounts } from "../content/recipes";
@@ -15,6 +14,7 @@ import {
 import type { Place } from "../map/places";
 import type { WorldMap } from "../map/world";
 import { createRng, hashSeed, randInt, shuffle } from "../rng";
+import { effectiveStats, hasTalent } from "./characters";
 import type { Character, Notice, World } from "./state";
 
 /** Prezzi di una cittadina o di un mercato, in percentuale del valore di base di ogni materia. */
@@ -44,8 +44,8 @@ export function priceList(map: WorldMap, place: Place): PriceList {
 
 /** Quanto può portare un carovaniere. */
 export function cargoCapacity(character: Character): number {
-  const base = CARGO_BASE + CARGO_PER_VIGOR * character.stats.vigor;
-  const talent = ETHNICITIES[character.ethnicity].talent === character.job;
+  const base = CARGO_BASE + CARGO_PER_VIGOR * effectiveStats(character).vigor;
+  const talent = hasTalent(character);
   return Math.floor((base * (talent ? CARGO_TALENT : 100)) / 100);
 }
 

@@ -16,6 +16,10 @@ export const RECIPE_IDS = [
   "glassworks",
   "tannery",
   "herbalist",
+  "moon_forge",
+  "music_box_maker",
+  "lantern_maker",
+  "silk_tailor",
 ] as const;
 export type RecipeId = (typeof RECIPE_IDS)[number];
 
@@ -41,4 +45,9 @@ export const RECIPES: Record<RecipeId, Recipe> = {
   glassworks: { inputs: [["sand", 2], ["charcoal", 1]], outputs: [["glass", 1]], duration: 2 * HOUR },
   tannery: { inputs: [["hides", 2], ["herbs", 1]], outputs: [["leather", 2]], duration: 2 * HOUR },
   herbalist: { inputs: [["herbs", 3]], outputs: [["salve", 1]], duration: 2 * HOUR },
+  // Le ricette delle materie dei dungeon: poche unità, molto valore.
+  moon_forge: { inputs: [["moon_iron", 1], ["charcoal", 1]], outputs: [["moon_steel", 1]], duration: 2 * HOUR },
+  music_box_maker: { inputs: [["echo_crystal", 1], ["planks", 1]], outputs: [["music_box", 1]], duration: 2 * HOUR },
+  lantern_maker: { inputs: [["glowmoss", 1], ["glass", 1]], outputs: [["everlamp", 1]], duration: 2 * HOUR },
+  silk_tailor: { inputs: [["shadow_silk", 1], ["leather", 1]], outputs: [["shadow_cloak", 1]], duration: 3 * HOUR },
 };

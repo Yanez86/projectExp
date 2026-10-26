@@ -3,6 +3,8 @@
  * Il nome visibile sta nei file di lingua, alla chiave `material.<id>`.
  */
 export const RAW_MATERIAL_IDS = ["grain", "timber", "clay", "iron_ore", "herbs", "sand", "hides"] as const;
+/** Le materie rare, che si trovano solo nei dungeon. */
+export const DUNGEON_MATERIAL_IDS = ["moon_iron", "echo_crystal", "glowmoss", "shadow_silk"] as const;
 export const PRODUCT_IDS = [
   "flour",
   "bread",
@@ -14,10 +16,15 @@ export const PRODUCT_IDS = [
   "glass",
   "leather",
   "salve",
+  "moon_steel",
+  "music_box",
+  "everlamp",
+  "shadow_cloak",
 ] as const;
-export const MATERIAL_IDS = [...RAW_MATERIAL_IDS, ...PRODUCT_IDS] as const;
+export const MATERIAL_IDS = [...RAW_MATERIAL_IDS, ...DUNGEON_MATERIAL_IDS, ...PRODUCT_IDS] as const;
 
 export type RawMaterialId = (typeof RAW_MATERIAL_IDS)[number];
+export type DungeonMaterialId = (typeof DUNGEON_MATERIAL_IDS)[number];
 export type MaterialId = (typeof MATERIAL_IDS)[number];
 export type Stock = Record<MaterialId, number>;
 
