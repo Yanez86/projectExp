@@ -54,6 +54,26 @@ export function hexesInRange(center: Hex, radius: number): Hex[] {
   return out;
 }
 
+/**
+ * Gli esagoni attraversati dalla retta da `a` a `b`, estremi compresi. `nudge` sposta di poco la
+ * retta: quando passa esattamente su un lato, decide da che parte cadere (+1 o -1).
+ */
+export function hexLine(a: Hex, b: Hex, nudge: 1 | -1 = 1): Hex[] {
+  const n = distance(a, b);
+  if (n === 0) return [a];
+  const e = 1e-6 * nudge;
+  const aq = a.q + e;
+  const ar = a.r + 2 * e;
+  const bq = b.q + e;
+  const br = b.r + 2 * e;
+  const out: Hex[] = [];
+  for (let i = 0; i <= n; i++) {
+    const t = i / n;
+    out.push(hexRound(aq + (bq - aq) * t, ar + (br - ar) * t));
+  }
+  return out;
+}
+
 /** Arrotonda coordinate assiali frazionarie all'esagono più vicino. */
 export function hexRound(q: number, r: number): Hex {
   const s = -q - r;

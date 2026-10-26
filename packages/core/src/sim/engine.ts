@@ -8,7 +8,7 @@ import {
   type JobId,
   type Stats,
 } from "../content/ethnicities";
-import { CHARACTER_VISION, GUILD_VISION, HIGH_GROUND, KEEN_EYE } from "../content/movement";
+import { visionRange } from "../content/vision";
 import { hexEquals, type Hex } from "../hex";
 import { FOG_UNEXPLORED, createFog, updateVisibility, type VisionSource } from "../map/fog";
 import { generateMap } from "../map/generate";
@@ -89,20 +89,17 @@ function createCharacter(
   return { id, name, gender, ethnicity, job, stats, hex, destination: null, route: [], step: null };
 }
 
-/** Raggio di vista di un personaggio dove si trova: le alture e un buon Occhio vedono più lontano. */
+/** Fin dove vede un personaggio dove si trova: dipende dal terreno e dal suo Occhio. */
 export function visionRadius(world: World, character: Character): number {
-  const biome = biomeIdAt(world.map, character.hex);
-  let radius = CHARACTER_VISION;
-  if (biome && HIGH_GROUND.includes(biome)) radius++;
-  if (character.stats.eye >= KEEN_EYE) radius++;
-  return radius;
+  return visionRange(biomeIdAt(world.map, character.hex), character.stats.eye);
 }
 
 /** Ricalcola cosa è in vista; restituisce quante caselle sono state scoperte ora. */
 function refreshVisibility(world: World): number {
   const { state, map } = world;
   const before = countUnexplored(state.fog.state);
-  const sources: VisionSource[] = [{ hex: state.guild.hex, radius: GUILD_VISION }];
+  // La sede vede come chi sta sulla sua casella.
+  const sources: VisionSource[] = [{ hex: state.guild.hex, radius: visionRange(biomeIdAt(map, state.guild.hex)) }];
   for (const c of state.characters) sources.push({ hex: c.hex, radius: visionRadius(world, c) });
   updateVisibility(state.fog, map, sources);
   return before - countUnexplored(state.fog.state);

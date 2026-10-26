@@ -1,4 +1,5 @@
-import { hexesInRange, type Hex } from "../hex";
+import type { Hex } from "../hex";
+import { sightFrom } from "./sight";
 import { tileIndex, type WorldMap } from "./world";
 
 /** Stato della nebbia di ogni casella. */
@@ -28,7 +29,8 @@ export function fogAt(fog: Fog, map: WorldMap, h: Hex): FogLevel {
 
 /**
  * Ricalcola cosa è in vista: ciò che era in vista e non lo è più resta esplorato,
- * ciò che è vicino a una fonte di visione diventa in vista (e quindi esplorato per sempre).
+ * ciò che una fonte di visione vede (entro il suo raggio, senza ostacoli in mezzo) diventa in
+ * vista, e quindi esplorato per sempre.
  */
 export function updateVisibility(fog: Fog, map: WorldMap, sources: readonly VisionSource[]): void {
   const { state } = fog;
@@ -36,7 +38,7 @@ export function updateVisibility(fog: Fog, map: WorldMap, sources: readonly Visi
     if (state[i] === FOG_VISIBLE) state[i] = FOG_EXPLORED;
   }
   for (const source of sources) {
-    for (const h of hexesInRange(source.hex, source.radius)) {
+    for (const h of sightFrom(map, source.hex, source.radius)) {
       const i = tileIndex(map, h);
       if (i >= 0) state[i] = FOG_VISIBLE;
     }

@@ -24,13 +24,6 @@ export const UNKNOWN_COST = 150;
 export const COMFORTABLE_FACTOR = 75;
 export const HARD_FACTOR = 140;
 
-/** Raggio di vista: la sede, un personaggio, e il bonus delle alture. */
-export const GUILD_VISION = 3;
-export const CHARACTER_VISION = 2;
-export const HIGH_GROUND: readonly BiomeId[] = ["hills", "mountains"];
-/** Occhio da cui un personaggio vede una casella più lontano. */
-export const KEEN_EYE = 7;
-
 export function affinityFactor(ethnicity: EthnicityId, biome: BiomeId): number {
   const e = ETHNICITIES[ethnicity];
   if (e.comfortable.includes(biome)) return COMFORTABLE_FACTOR;

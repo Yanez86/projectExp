@@ -51,8 +51,13 @@ linee di produzione e vende alle città sparse sulla mappa.
   biomi costano di più (deserto ×1,3, foresta ×1,5, tundra ×1,6, colline ×1,7, palude ×2,
   montagne ×2,6); l'acqua non si attraversa a piedi. Un bioma congeniale all'etnia costa
   ×0,75, uno ostile ×1,4. Il Passo accorcia o allunga ogni passo.
-- [Proposta] Vista: la sede vede a 3 caselle, un personaggio a 2; +1 su colline e montagne,
-  +1 con Occhio 7 o più.
+- [Deciso] Vista: in pianura si vede fino a 4 caselle. Le montagne bloccano la vista di ciò che
+  sta dietro (la montagna si vede). Attraverso una foresta si vede la foresta e solo una casella
+  dietro.
+- [Proposta] Gli altri terreni aperti (deserto, tundra, palude) vedono come la pianura, a 4
+  caselle. Dalle colline si vede a 5, dalle montagne a 6, e dalle alture si vede sopra le
+  foreste (non sopra le montagne). Con Occhio 7 o più si vede una casella in più. La sede vede
+  come un personaggio sulla sua casella.
 - [Proposta] La gilda parte con due esploratori: un Cartiglio e uno di un'altra etnia.
 - [Aperto] Quali luoghi di interesse esistono e cosa offrono.
 

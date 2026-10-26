@@ -7,6 +7,8 @@ export * from "./map/generate";
 export * from "./map/fog";
 export * from "./content/ethnicities";
 export * from "./content/movement";
+export * from "./content/vision";
+export * from "./map/sight";
 export * from "./sim/state";
 export * from "./sim/route";
 export * from "./sim/engine";

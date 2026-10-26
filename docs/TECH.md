@@ -80,6 +80,11 @@ Il server andrà in `apps/server/`.
   scoperta, le nuvole si aprono e scivolano via dal punto di scoperta. Le zone esplorate ma fuori
   vista restano scoperte, un po' più scure.
 - Comandi: trascini per spostarti, rotella o pizzico per lo zoom, tocco per selezionare.
+- Vista con linea di visuale: per ogni casella entro il raggio si traccia la retta di esagoni dal
+  punto di vista; le caselle in mezzo possono fermarla (montagne) o lasciarla passare per poco
+  (foreste). Si provano due rette spostate di un soffio da parti opposte: se una è libera, la
+  casella si vede, così la vista lungo i lati non dipende da un arrotondamento. Le regole stanno
+  in `packages/core/src/content/vision.ts`.
 
 ## 6. Grafica
 
