@@ -19,7 +19,8 @@
     >
       <Token name="char_{c.ethnicity}" />
       <span class="name">{c.name}</span>
-      {#if c.step}<span class="moving" aria-hidden="true">›</span>{/if}
+      {#if c.task?.kind === "building"}<span class="moving" aria-hidden="true">⚒</span>
+      {:else if c.step}<span class="moving" aria-hidden="true">›</span>{/if}
     </button>
   {/each}
 </nav>

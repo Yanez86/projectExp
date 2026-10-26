@@ -4,7 +4,10 @@ import en from "../locales/en.json";
 import it_ from "../locales/it.json";
 import { BIOME_IDS } from "../src/content/biomes";
 import { ETHNICITY_IDS, JOB_IDS, STAT_IDS } from "../src/content/ethnicities";
+import { MATERIAL_IDS } from "../src/content/materials";
+import { OUTPOST_KINDS } from "../src/content/outposts";
 import { PLACE_KINDS } from "../src/content/places";
+import { RECIPE_IDS } from "../src/content/recipes";
 import { createTranslator, detectLocale } from "../src/i18n";
 
 const locales: Record<string, Record<string, string>> = { it: it_, en };
@@ -43,6 +46,15 @@ describe("i18n", () => {
     for (const id of PLACE_KINDS) {
       expect(it_).toHaveProperty(`place.${id}`);
       expect(it_).toHaveProperty(`place.${id}.about`);
+    }
+  });
+
+  it("ha un nome per ogni materia, avamposto e laboratorio, e un motivo per ogni rifiuto", () => {
+    for (const id of MATERIAL_IDS) expect(it_).toHaveProperty(`material.${id}`);
+    for (const id of OUTPOST_KINDS) expect(it_).toHaveProperty(`outpost.${id}`);
+    for (const id of RECIPE_IDS) expect(it_).toHaveProperty(`workshop.${id}`);
+    for (const id of ["unexplored", "water", "guild", "place", "outpost", "near-outpost", "gold"]) {
+      expect(it_).toHaveProperty(`reason.${id}`);
     }
   });
 

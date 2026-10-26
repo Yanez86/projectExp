@@ -1,4 +1,4 @@
-# Documento di design (bozza v0.9)
+# Documento di design (bozza v0.10)
 
 > Stato: bozza stabile per partire. I dettagli (luoghi, dungeon, ricette, ricerche) si definiscono
 > tappa per tappa. Il piano tecnico è in [TECH.md](TECH.md).
@@ -64,7 +64,21 @@ linee di produzione e vende alle città sparse sulla mappa.
   caselle. Dalle colline si vede a 5, dalle montagne a 6, e dalle alture si vede sopra le
   foreste (non sopra le montagne). Con Occhio 7 o più si vede una casella in più. La sede vede
   come un personaggio sulla sua casella.
-- [Proposta] La gilda parte con due esploratori: un Cartiglio e uno di un'altra etnia.
+- [Proposta] La gilda parte con due esploratori (un Cartiglio e uno di un'altra etnia) e un
+  costruttore micelide.
+- [Proposta] Avamposti:
+  - li fonda un costruttore: va sulla casella, paga 60 monete e ci lavora 4 ore di gioco (3 se
+    ha il talento del mestiere, come i Micelidi); intanto resta sul cantiere;
+  - ogni bioma di terra ha il suo avamposto e la sua materia prima: **fattoria** (pianura,
+    grano), **campo dei boscaioli** (foresta, legname), **cava d'argilla** (colline, argilla),
+    **miniera** (montagne, ferro grezzo), **capanno delle erbe** (palude, erbe), **cava di
+    sabbia** (deserto, sabbia), **rifugio dei cacciatori** (tundra, pelli);
+  - ogni ora di gioco manda alla sede 2 unità, più una ogni due caselle vicine dello stesso
+    bioma (da 2 a 5): conviene costruire in mezzo al bioma;
+  - si costruisce solo dove si è esplorato, non sull'acqua, sulla sede, sui luoghi di interesse
+    né accanto a un altro avamposto;
+  - il raccolto arriva subito al magazzino della sede (più avanti potrebbero servire le
+    carovane); l'avamposto vede le caselle intorno, fino a 2 di distanza.
 - [Deciso] Cinque tipi di luoghi di interesse, sparsi sulla mappa e nascosti dalle nuvole finché
   qualcuno non li vede: **cittadine**, **mercati**, **castelli**, **torri del mago** e
   **ingressi di dungeon**. Ogni luogo ha un nome generato; quando un personaggio lo scopre arriva
@@ -163,6 +177,31 @@ Il giocatore assolda personaggi già fatti, non li crea. Quattro mestieri:
 - [Deciso] Le materie prime arrivano dalla mappa (avamposti) e dai dungeon.
 - [Deciso] Si vende alle città sparse sulla mappa.
 - [Proposta] Ogni città ha richieste e prezzi propri.
+- [Proposta] La gilda parte con 400 monete; per ora si spendono soltanto, si guadagneranno
+  vendendo alle città (tappa 4).
+- [Proposta] La sede ha un magazzino, che tiene fino a 100 unità di ogni materia (quello che non
+  ci sta va perso), e posto per 4 laboratori.
+- [Proposta] Un laboratorio costa 80 monete, si costruisce in 2 ore di gioco e lavora una
+  ricetta a cicli: all'inizio del ciclo prende le materie, alla fine mette in magazzino i
+  prodotti. Se manca una materia o il prodotto non ci sta, aspetta; si può mettere in pausa.
+- [Proposta] Le prime ricette (la durata è di un ciclo, in ore di gioco):
+
+  | Laboratorio | Prende | Dà | Ore |
+  |---|---|---|---|
+  | Mulino | 2 grano | 1 farina | 1 |
+  | Forno | 2 farina, 1 legname | 3 pane | 2 |
+  | Segheria | 2 legname | 1 asse | 1 |
+  | Carbonaia | 3 legname | 2 carbone | 2 |
+  | Fornace | 2 argilla, 1 carbone | 2 mattoni | 2 |
+  | Fonderia | 2 ferro grezzo, 1 carbone | 1 lingotto di ferro | 2 |
+  | Fucina | 1 lingotto di ferro, 1 asse | 1 attrezzi | 2 |
+  | Vetreria | 2 sabbia, 1 carbone | 1 vetro | 2 |
+  | Conceria | 2 pelli, 1 erbe | 2 cuoio | 2 |
+  | Erboristeria | 3 erbe | 1 unguento | 2 |
+
+  La catena più lunga per ora arriva agli attrezzi: legname → carbone e assi, ferro grezzo +
+  carbone → lingotti, lingotti + assi → attrezzi. Le materie dei dungeon (tappa 5) allungheranno
+  le catene.
 
 ## 9. Albero tecnologico
 
@@ -197,7 +236,7 @@ Vedi [TECH.md](TECH.md).
 
 1. Mappa: generazione a esagoni, biomi, nuvole sull'inesplorato, navigazione con mouse e touch.
 2. Sede della gilda, motore a eventi, primi esploratori sulla mappa. (fatta)
-3. Avamposti e materie prime; prime linee di produzione.
+3. Avamposti e materie prime; prime linee di produzione. (fatta)
 4. Città, mercato e carovane.
 5. Mercenari e dungeon.
 6. Albero tecnologico, gilde rivali IA, condizioni di vittoria: primo single player completo.

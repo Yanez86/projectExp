@@ -1,13 +1,13 @@
 import { calendar, type Translate } from "@exp/core";
 
-/** Una durata reale in ms, a parole: "2 min 30 s". */
+/** Una durata reale in ms, a parole: "2 min 30 s", "1 min", "3 h". */
 export function formatDuration(t: Translate, ms: number): string {
   const total = Math.max(0, Math.ceil(ms / 1000));
   const h = Math.floor(total / 3600);
   const m = Math.floor((total % 3600) / 60);
   const s = total % 60;
-  if (h > 0) return t("duration.hours", { h, m });
-  if (m > 0) return t("duration.minutes", { m, s });
+  if (h > 0) return m > 0 ? t("duration.hours", { h, m }) : t("duration.hoursOnly", { h });
+  if (m > 0) return s > 0 ? t("duration.minutes", { m, s }) : t("duration.minutesOnly", { m });
   return t("duration.seconds", { s });
 }
 

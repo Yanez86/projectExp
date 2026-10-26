@@ -2,7 +2,7 @@ import { MAP_GENERATOR_VERSION, generateMap } from "../map/generate";
 import type { GameState, World } from "./state";
 
 /** Da cambiare quando cambia la forma del salvataggio: i salvataggi vecchi non si caricano. */
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 interface SaveFile extends Omit<GameState, "fog"> {
   readonly version: number;
@@ -63,6 +63,8 @@ export function deserializeWorld(json: string): World | null {
     fog: { state: fog },
     guild: file.guild,
     characters: file.characters,
+    outposts: file.outposts,
+    workshops: file.workshops,
     events: file.events,
     nextSeq: file.nextSeq,
   };

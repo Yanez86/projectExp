@@ -4,10 +4,15 @@
   import { daylight } from "../lib/map/daylight";
   import { game } from "../lib/game.svelte";
   import { i18n } from "../lib/i18n.svelte";
+  import Token from "./Token.svelte";
 
   let { showDebug = $bindable(false) }: { showDebug?: boolean } = $props();
 
   let gameNow = $derived(game.world ? gameTimeAt(game.world.state.clock, game.now) : undefined);
+  let gold = $derived.by(() => {
+    void game.version;
+    return game.world?.state.guild.gold;
+  });
 </script>
 
 <header class="bar">
@@ -21,6 +26,20 @@
     {/if}
   </div>
   <div class="actions">
+    {#if gold !== undefined}
+      <button
+        type="button"
+        class="guild"
+        class:active={game.showGuild}
+        aria-pressed={game.showGuild}
+        title={i18n.t("guild.title")}
+        onclick={() => (game.showGuild = !game.showGuild)}
+      >
+        <Token name="coin" scale={2} />
+        <span class="gold">{gold}</span>
+        <span>{i18n.t("guild.open")}</span>
+      </button>
+    {/if}
     <label>
       <span class="visually-hidden">{i18n.t("language.label")}</span>
       <select
@@ -93,6 +112,18 @@
     border: 1px solid var(--panel-border);
     border-radius: var(--radius);
     padding: 0 8px;
+  }
+
+  button.guild {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.85rem;
+  }
+
+  .gold {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
   }
 
   button.active {

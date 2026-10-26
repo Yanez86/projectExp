@@ -2,15 +2,24 @@
   import {
     FOG_EXPLORED,
     FOG_UNEXPLORED,
+    HARVEST_MS,
+    OUTPOSTS,
+    OUTPOST_COST,
     STAT_IDS,
     biomeIdAt,
+    checkOutpostSite,
     estimateArrival,
     fogAt,
     hexEquals,
+    outpostAt,
+    outpostKindFor,
     placeAt,
     previewRoute,
     realDelay,
     type Hex,
+    type BuildProblem,
+    type Outpost,
+    type SiteCheck,
   } from "@exp/core";
   import { formatDuration } from "../lib/format";
   import { game } from "../lib/game.svelte";
@@ -42,6 +51,7 @@
       dim: level === FOG_EXPLORED,
       guild: level !== FOG_UNEXPLORED && hexEquals(h, world.state.guild.hex),
       place: level === FOG_UNEXPLORED ? undefined : placeAt(world.map, h),
+      outpost: level === FOG_UNEXPLORED ? undefined : outpostAt(world.state, h),
     };
   }
 
@@ -49,6 +59,49 @@
     void game.version;
     return game.selectedHex ? describeHex(game.selectedHex) : undefined;
   });
+
+  /** Il cantiere su cui lavora, se sta costruendo. */
+  let building = $derived.by(() => {
+    void game.version;
+    const task = character?.task;
+    if (!world || task?.kind !== "building") return undefined;
+    const outpost = world.state.outposts.find((o) => o.id === task.outpostId);
+    return outpost ? { ...outpost } : undefined;
+  });
+  /** Cosa va a costruire, se è in viaggio per farlo. */
+  let goingToBuild = $derived.by(() => {
+    const task = character?.task;
+    return world && task?.kind === "build" ? outpostKindFor(biomeIdAt(world.map, task.hex)) : undefined;
+  });
+
+  /** Se il costruttore selezionato può fondare un avamposto sulla casella selezionata. */
+  let site = $derived.by((): SiteCheck | { readonly ok: false; readonly reason: BuildProblem } | undefined => {
+    void game.version;
+    if (!world || !character || character.job !== "builder" || building || !game.selectedHex) return undefined;
+    const check = checkOutpostSite(world, game.selectedHex);
+    if (check.ok && world.state.guild.gold < OUTPOST_COST) return { ok: false, reason: "gold" };
+    return check;
+  });
+
+  /** Un tempo di gioco come attesa reale, a parole. */
+  function wait(gameTime: number): string {
+    return world ? formatDuration(i18n.t, realDelay(world.state.clock, gameTime, game.now)) : "";
+  }
+
+  function outpostLine(o: Outpost): string {
+    if (!world) return "";
+    if (o.readyAt !== null) return i18n.t("outpost.status.building", { eta: wait(o.readyAt) });
+    return yieldLine(o.kind, o.yield);
+  }
+
+  function yieldLine(kind: Outpost["kind"], amount: number): string {
+    if (!world) return "";
+    return i18n.t("outpost.yield", {
+      amount,
+      material: i18n.t(`material.${OUTPOSTS[kind].material}`),
+      eta: formatDuration(i18n.t, HARVEST_MS / world.state.clock.speed),
+    });
+  }
 
   /** Quanto manca all'arrivo, in tempo reale. */
   let eta = $derived.by(() => {
@@ -82,7 +135,11 @@
       </div>
     </header>
     <p class="status">
-      {#if eta !== undefined}
+      {#if building?.readyAt}
+        {i18n.t("status.building", { kind: i18n.t(`outpost.${building.kind}`), eta: wait(building.readyAt) })}
+      {:else if eta !== undefined && goingToBuild}
+        {i18n.t("status.goingToBuild", { kind: i18n.t(`outpost.${goingToBuild}`), eta: formatDuration(i18n.t, eta) })}
+      {:else if eta !== undefined}
         {i18n.t("status.travelling", { eta: formatDuration(i18n.t, eta) })}
       {:else}
         {i18n.t("status.idle", { gender: character.gender })}
@@ -97,26 +154,42 @@
       <p class="target" class:dim={hexInfo.dim}>
         {#if hexInfo.place}
           {hexInfo.place.name} ({i18n.t(`place.${hexInfo.place.kind}`)}) ·
+        {:else if hexInfo.outpost}
+          {i18n.t(`outpost.${hexInfo.outpost.kind}`)} ·
         {/if}
         {hexInfo.biome ? i18n.t(`biome.${hexInfo.biome}`) : i18n.t("fog.unexplored")} ·
         {i18n.t("hex.title", { q: hexInfo.hex.q, r: hexInfo.hex.r })}
       </p>
       {#if hexInfo.place}
         <p class="about">{i18n.t(`place.${hexInfo.place.kind}.about`)}</p>
+      {:else if hexInfo.outpost}
+        <p class="about">{outpostLine(hexInfo.outpost)}</p>
       {/if}
-      {#if preview === null}
+      {#if site?.ok}
+        <button type="button" class="primary" onclick={() => game.buildOutpost()}>
+          {i18n.t("action.build", { cost: i18n.t("gold", { n: OUTPOST_COST }) })}
+        </button>
+        <p class="hint">{i18n.t(`outpost.${site.kind}`)}: {yieldLine(site.kind, site.yield)}</p>
+      {:else if site}
+        <p class="warn">{i18n.t("build.blocked", { reason: i18n.t(`reason.${site.reason}`) })}</p>
+      {/if}
+      {#if building}
+        <!-- Sul cantiere non si muove. -->
+      {:else if preview === null}
         <p class="warn">{i18n.t("route.unreachable")}</p>
       {:else if preview?.here}
-        <p class="hint">{i18n.t("route.here")}</p>
+        {#if !site?.ok}<p class="hint">{i18n.t("route.here")}</p>{/if}
       {:else if preview}
-        <button type="button" class="primary" onclick={() => game.sendSelected()}>
+        <button type="button" class:primary={!site?.ok} onclick={() => game.sendSelected()}>
           {i18n.t("action.send", { eta: formatDuration(i18n.t, preview.real) })}
         </button>
       {/if}
     {:else if character.destination}
       <button type="button" onclick={() => game.stopSelected()}>{i18n.t("action.stop")}</button>
-    {:else}
-      <p class="hint">{i18n.t("hint.send", { gender: character.gender })}</p>
+    {:else if !building}
+      <p class="hint">
+        {character.job === "builder" ? i18n.t("hint.build") : i18n.t("hint.send", { gender: character.gender })}
+      </p>
     {/if}
   {:else if hexInfo?.place}
     <header>

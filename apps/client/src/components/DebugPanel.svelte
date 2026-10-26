@@ -21,7 +21,10 @@
       {/each}
     </select>
   </label>
-  <button type="button" onclick={() => game.skip(6)}>{i18n.t("debug.skip", { hours: 6 })}</button>
+  <div class="buttons">
+    <button type="button" onclick={() => game.skip(6)}>{i18n.t("debug.skip", { hours: 6 })}</button>
+    <button type="button" onclick={() => game.addGold(500)}>{i18n.t("debug.gold", { gold: i18n.t("gold", { n: 500 }) })}</button>
+  </div>
   <label class="row">
     <span>{i18n.t("debug.seed")}</span>
     <input bind:value={game.seed} autocomplete="off" spellcheck="false" />

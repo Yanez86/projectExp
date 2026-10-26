@@ -657,6 +657,386 @@ function cloud(name, w, h, lobes) {
     }
   })
 }
+// ---------------------------------------------------------------- avamposti
+
+// Come i luoghi, sulla tela del rilievo: le finestre ("6") e le lanterne ("4") di notte si
+// accendono. `outpost_site` è il cantiere, uguale per tutti i biomi.
+
+sprite("_lantern", { outline: "k", pivot: "bottom" }, `
+  4
+  o
+  o
+  O`)
+
+sprite("_field", { w: 15, h: 7, pivot: "bottom" }, (c) => {
+  for (let y = 0; y < 7; y++) for (let x = 0; x < 15; x++) {
+    const left = 3 - Math.floor(y / 2), right = 14 - Math.floor(y / 2)
+    if (x < left || x > right) continue
+    c.px(x, y, y % 2 === 1 ? "E" : hash(x, y + 5) < 0.35 ? "A" : "y")
+  }
+})
+sprite("_barn", { outline: "k", pivot: "bottom" }, `
+  ....eee....
+  ...eeeEE...
+  ..eeeeEEE..
+  .eeeeeEEEE.
+  eEEEEEEEEEd
+  .RRRRRRRTT.
+  .RiR6RRiTT.
+  .RRiRRiRTT.
+  .RRRkkkRTT.
+  .RRRkkkRTT.`)
+sprite("_haystack", { outline: "E", pivot: "bottom" }, `
+  .yyy.
+  yyyyA
+  yAyAz
+  AAzzz`)
+
+sprite("_logs", { w: 12, h: 7, outline: "k", pivot: "bottom" }, (c) => {
+  // Tre tronchi visti di sbieco: le facce tagliate a sinistra, uno sopra i due di sotto.
+  const log = (x, y) => {
+    c.rect(x + 2, y, 8, 3, "o"); c.hline(x + 2, y, 8, "e"); c.hline(x + 2, y + 2, 8, "O")
+    c.rect(x, y, 3, 3, "a"); c.px(x + 1, y + 1, "E"); c.px(x + 2, y + 2, "A")
+  }
+  log(2, 0); log(0, 4); log(3, 4)
+})
+
+sprite("_pit", { w: 16, h: 7, pivot: "center" }, (c) => {
+  // Una buca: dentro, la parete in fondo è in ombra e quella davanti prende luce.
+  for (let y = 0; y < 7; y++) for (let x = 0; x < 16; x++) {
+    const nx = (x + 0.5 - 8) / 8, ny = (y + 0.5 - 3.5) / 3.5
+    const d = nx * nx + ny * ny
+    if (d < 0.5) c.px(x, y, y < 3 ? "O" : y < 5 ? "Q" : "P")
+    else if (d < 1) c.px(x, y, y < 3 ? "P" : "t")
+  }
+})
+sprite("_clay_pile", { outline: "Q", pivot: "bottom" }, `
+  ..tP..
+  .tPPQ.
+  tPPPQQ`)
+
+sprite("_mine", { w: 20, h: 13, outline: "n", pivot: "bottom" }, (c) => {
+  for (let x = 0; x < 20; x++) {
+    const nx = (x + 0.5 - 10) / 10
+    const top = Math.round(12 - (1 - nx * nx) * 11 + (hash(x, 4) - 0.5) * 1.5)
+    for (let y = Math.max(0, top); y < 13; y++) c.px(x, y, x < 8 ? "s" : x < 14 ? "S" : "K")
+  }
+  // L'imbocco armato di travi, con una lanterna appesa.
+  c.rect(8, 6, 5, 7, "k")
+  c.vline(7, 5, 8, "o"); c.vline(13, 5, 8, "O")
+  c.hline(7, 4, 7, "e"); c.hline(7, 5, 7, "o")
+  c.px(12, 7, "4")
+})
+sprite("_cart", { outline: "k", pivot: "bottom" }, `
+  .sKSs.
+  oooooO
+  oOOOOO
+  .n..n.`)
+
+sprite("_stilt_hut", { outline: "k", pivot: "bottom" }, `
+  ...LLL...
+  ..LLLLm..
+  .LLLLLmm.
+  LLLLLmmmM
+  .ooooooO.
+  .o6ogogO.
+  .oooooOO.
+  .OOOOOOO.
+  .o.....o.
+  .O.....O.`)
+sprite("_puddle", { w: 18, h: 6, pivot: "center" }, (c) => {
+  c.ellipse(8.5, 2.5, 8.5, 2.5, "u"); c.ellipse(8, 2, 6, 1.5, "C"); c.hline(4, 1, 4, "f")
+})
+sprite("_herb_rack", { outline: "k", pivot: "bottom" }, `
+  ooooooo
+  g.G.g.G
+  G.g.G.g
+  o.....o
+  O.....O`)
+
+sprite("_tent", { outline: "k", pivot: "bottom" }, `
+  ....o....
+  ...prp...
+  ..pprII..
+  .pprrrII.
+  pprkkkrII`)
+sprite("_sand_pile", { outline: "z", pivot: "bottom" }, `
+  ..aaA..
+  .aaaAA.
+  aaAAAzz`)
+sprite("_sieve", { outline: "k", pivot: "bottom" }, `
+  oooooo
+  oSKSKo
+  o....o
+  O....O`)
+
+sprite("_cabin", { outline: "k", pivot: "bottom" }, `
+  ...wwww...
+  ..wwwwwW..
+  .wwwwwWWW.
+  wwwwwWWWWv
+  .eeeeeeeO.
+  .o6ooooOO.
+  .eeeekeeO.
+  .ooookoOO.`)
+sprite("_fur_rack", { outline: "k", pivot: "bottom" }, `
+  o.....o
+  oEEEEEo
+  o.EdE.o
+  o.EEE.o
+  o..E..o
+  O.....O`)
+
+sprite("_frame", { pivot: "bottom" }, `
+  ....o....
+  ...oeo...
+  ..oO.Oo..
+  .oO...Oo.
+  eeeeeeeee
+  .o..o..O.
+  .o..o..O.
+  .o..o..O.
+  .OOOOOOO.`)
+sprite("_plank_pile", { outline: "k", pivot: "bottom" }, `
+  eeeeeee
+  ooooooO
+  eeeeeee
+  ooooooO`)
+sprite("_stake", { pivot: "bottom" }, `
+  orr
+  orR
+  o..
+  O..`)
+
+const OUTPOST_ART = {
+  farm: [["_field", 11, 44], ["_haystack", 6, 36], ["_barn", 21, 39], ["_haystack", 27, 44]],
+  lumber_camp: [["_tree", 7, 30], ["_tree_b", 16, 29], ["_pine_g", 26, 31], ["_house_b", 10, 40], ["_logs", 22, 42], ["_stump", 15, 44]],
+  clay_pit: [["_hill_s", 9, 31], ["_pit", 16, 39], ["_clay_pile", 25, 37], ["_clay_pile", 7, 42], ["_lantern", 22, 44]],
+  mine: [["_pk_med", 12, 32], ["_mine", 15, 41], ["_cart", 26, 43], ["_rock", 6, 43]],
+  herb_hut: [["_puddle", 15, 40], ["_stilt_hut", 15, 41], ["_herb_rack", 25, 42], ["_cattails", 6, 39], ["_cattails", 9, 44]],
+  sand_pit: [["_tent", 11, 37], ["_sand_pile", 23, 37], ["_sieve", 21, 43], ["_sand_pile", 8, 44], ["_lantern", 15, 44]],
+  trapper_lodge: [["_pine", 6, 32], ["_pine", 26, 33], ["_cabin", 14, 40], ["_fur_rack", 24, 43], ["_snow_rock", 7, 43]],
+  site: [["_yard", 16, 38], ["_frame", 15, 40], ["_plank_pile", 25, 42], ["_stake", 6, 39], ["_stake", 27, 35], ["_crate", 8, 43]],
+}
+Object.assign(SHADOW, {
+  _lantern: ["_shadow_xs", 1], _field: ["_shadow_xs", 0], _barn: ["_shadow_m", 4], _haystack: ["_shadow_xs", 2],
+  _logs: ["_shadow_s", 2], _clay_pile: ["_shadow_xs", 1], _mine: ["_shadow_l", 3], _cart: ["_shadow_xs", 1],
+  _stilt_hut: ["_shadow_s", 3], _herb_rack: ["_shadow_xs", 1], _tent: ["_shadow_s", 3], _sand_pile: ["_shadow_xs", 1],
+  _sieve: ["_shadow_xs", 1], _cabin: ["_shadow_s", 3], _fur_rack: ["_shadow_xs", 1], _frame: ["_shadow_s", 2],
+  _plank_pile: ["_shadow_xs", 1], _stake: ["_shadow_xs", 0],
+})
+// Senza ombra, sotto a tutto: il cortile, i campi, le buche, le pozze.
+const FLAT = new Set(["_yard", "_field", "_pit", "_puddle"])
+for (const [kind, things] of Object.entries(OUTPOST_ART)) {
+  const flat = things.filter(([n]) => FLAT.has(n)).map(([n, x, y]) => stamp(n, x, y))
+  sprite(`outpost_${kind}`, { w: S, h: S + TOP }, ...flat, ...withShadows(things.filter(([n]) => !FLAT.has(n))))
+  if (kind !== "site") glowOf(`outpost_${kind}`)
+}
+
+// ---------------------------------------------------------------- materie
+
+// Icone 10×10 con il contorno: 12×12 nell'interfaccia.
+const MATERIAL_ART = {
+  grain: `
+    .y..y..y..
+    yAyyAyyAy.
+    .yAyAyAy..
+    ..yAyAy...
+    ...yAy....
+    ...ooo....
+    ...yAy....
+    ..yA.Ay...
+    .yA...Ay..
+    ..........`,
+  timber: `
+    ..........
+    .aa.eeeee.
+    aEEaooooo.
+    aEEaooooo.
+    .aa.OOOOO.
+    ...aa.eeee
+    ..aEEaoooo
+    ..aEEaoooo
+    ...aa.OOOO
+    ..........`,
+  clay: `
+    ..........
+    ..........
+    ...tPP....
+    ..tPPPPQ..
+    .tPPPPPPQ.
+    .PPPPPPQQ.
+    .PPPPPQQQ.
+    ..QQQQQQ..
+    ..........
+    ..........`,
+  iron_ore: `
+    ..........
+    ...sSS....
+    ..sSSKSS..
+    .sSRSSKKS.
+    .sSSSKRKK.
+    .SSRKKKKK.
+    ..SKKRKK..
+    ...KKKK...
+    ..........
+    ..........`,
+  herbs: `
+    ....l.....
+    ..l.lg.l..
+    ..lggGgl..
+    ...gGGg...
+    ....GG....
+    ...oEo....
+    ....G.....
+    ....G.....
+    ....h.....
+    ..........`,
+  sand: `
+    ..........
+    ..........
+    ..........
+    ....aa....
+    ...aaaA...
+    ..aaaAAz..
+    .aaaAAAzz.
+    aaAAAAzzzz
+    ..........
+    ..........`,
+  hides: `
+    .E......E.
+    .EEeeeeEE.
+    ..EeeeeE..
+    ..EeeeeeE.
+    .EeeeeeeE.
+    .EEeeeeEE.
+    ..EeeeeE..
+    ...EeeE...
+    ...E..E...
+    ..........`,
+  flour: `
+    ...o..o...
+    ....oo....
+    ...pppp...
+    ..pppppi..
+    .ppppppii.
+    .pppIppii.
+    .ppIIIpii.
+    .ppppppii.
+    ..iiiiii..
+    ..........`,
+  bread: `
+    ..........
+    ..........
+    ...eeee...
+    ..eaeaeE..
+    .eEeEeEeE.
+    .eeeeeeeE.
+    .EEEEEEEE.
+    ..dddddd..
+    ..........
+    ..........`,
+  planks: `
+    ..........
+    eeeeeeeeee
+    ooooooooOO
+    OOOOOOOOOO
+    ..........
+    eeeeeeeeee
+    ooooooooOO
+    OOOOOOOOOO
+    ..........
+    ..........`,
+  charcoal: `
+    ..........
+    ..........
+    ....Kn....
+    ..KKnnn...
+    .Knnnnnn..
+    .nnKnnnnn.
+    .KnnnnnKn.
+    ..nnnnnn..
+    ..........
+    ..........`,
+  bricks: `
+    ..........
+    ..........
+    .tPPPtPPP.
+    .PPPQPPPQ.
+    .QQQQQQQQ.
+    tPPPtPPP..
+    PPPQPPPQ..
+    QQQQQQQQ..
+    ..........
+    ..........`,
+  iron: `
+    ..........
+    ..........
+    ....wwwS..
+    ...sssssS.
+    ...KKKKKK.
+    .wwwSwwwS.
+    sssssssssS
+    KKKKKKKKKK
+    ..........
+    ..........`,
+  tools: `
+    ..........
+    .sssS.....
+    .sSSSK....
+    ..oK......
+    ...o......
+    ....o.....
+    .....o....
+    ......o...
+    .......O..
+    ..........`,
+  glass: `
+    ....ff....
+    ....cc....
+    ....ff....
+    ...fccf...
+    ..fccccC..
+    ..fcfccC..
+    ..fcfccC..
+    ..fccccC..
+    ...CCCC...
+    ..........`,
+  leather: `
+    ..........
+    ..........
+    ..........
+    .EEEeeeeE.
+    EdddEeeeeE
+    EdEdEeeeeE
+    EddEEEEEEE
+    .EEE.dddd.
+    ..........
+    ..........`,
+  salve: `
+    ..........
+    ...oooo...
+    ..OOOOOO..
+    ..iiiiiI..
+    .igGGGgII.
+    .igggggII.
+    .iiiiiiII.
+    ..IIIIII..
+    ..........
+    ..........`,
+}
+for (const [id, art] of Object.entries(MATERIAL_ART)) sprite(`mat_${id}`, { outline: "k" }, art)
+
+sprite("coin", { outline: "k" }, `
+  ..yyyy..
+  .yZyyyA.
+  yZyyyyyA
+  yyyAAyyA
+  yyyAAyyA
+  yyyyyyAz
+  .yyyyAz.
+  ..Azzz..`)
+
 cloud("cloud_0", 44, 28, [[10, 17, 8], [22, 13, 11], [34, 17, 8], [16, 20, 7], [29, 20, 7]])
 cloud("cloud_1", 44, 28, [[12, 15, 9], [27, 12, 10], [36, 18, 7], [20, 20, 7], [9, 21, 6]])
 cloud("cloud_2", 44, 28, [[9, 18, 7], [19, 12, 9], [31, 14, 10], [24, 21, 7], [37, 20, 6]])
@@ -818,5 +1198,5 @@ sprite("route_flag", { outline: "k", pivot: "bottom" }, `
 sheet("tiles", [
   "deep_water_*", "shallow_water_*", "plains_*", "forest_*", "hills_*", "mountains_*",
   "swamp_*", "desert_*", "tundra_*", "edge_*", "shore_*", "grid", "select",
-  "cloud_*", "guild*", "char_*", "route_*", "bird*", "place_*",
+  "cloud_*", "guild*", "char_*", "route_*", "bird*", "place_*", "outpost_*", "mat_*", "coin",
 ], { pad: 1 })

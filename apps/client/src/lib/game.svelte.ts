@@ -3,15 +3,18 @@ import {
   createWorld,
   deserializeWorld,
   gameTimeAt,
+  grantGold,
   hexEquals,
   serializeWorld,
   setSpeed,
   skipAhead,
   syncTo,
   type Character,
+  type Command,
   type CommandResult,
   type Hex,
   type Notice,
+  type RecipeId,
   type World,
 } from "@exp/core";
 import { readSave, writeSave } from "./saves";
@@ -34,6 +37,8 @@ export interface Toast {
   readonly id: number;
   readonly key: string;
   readonly values: Record<string, string | number>;
+  /** Valori che sono a loro volta chiavi di testo: si traducono nella lingua del momento. */
+  readonly refs: Record<string, string>;
 }
 
 export function randomSeed(): string {
@@ -67,6 +72,8 @@ class Game {
   ambienceEnabled = $state(!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
   selectedHex = $state<Hex | undefined>(undefined);
   selectedId = $state<number | undefined>(undefined);
+  /** Il pannello della sede (magazzino e laboratori) al posto di quello della selezione. */
+  showGuild = $state(false);
   toasts = $state<Toast[]>([]);
   /** Da dove si aprono le nuvole all'ultimo cambio; nessuno se il cambio è di colpo. */
   revealFrom: Hex | undefined = undefined;
@@ -99,6 +106,7 @@ class Game {
     this.world = world;
     this.selectedHex = undefined;
     this.selectedId = world.state.characters[0]?.id;
+    this.showGuild = false;
     this.revealFrom = undefined;
     this.now = Date.now();
     this.version++;
@@ -114,15 +122,45 @@ class Game {
   }
 
   private handle(notices: Notice[]): void {
+    const world = this.world;
+    if (!world) return;
+    const character = (id: number) => world.state.characters.find((c) => c.id === id);
+    const outpostKind = (id: number) => `outpost.${world.state.outposts.find((o) => o.id === id)?.kind}`;
     let reveal: Hex | undefined;
     for (const n of notices) {
-      if (n.kind === "revealed") reveal = n.origin;
-      else if (n.kind === "discovered") {
-        const place = this.world?.map.places.find((p) => p.id === n.placeId);
-        if (place) this.toast("notice.discovered", { name: place.name, kind: `place.${place.kind}` });
-      } else {
-        const c = this.world?.state.characters.find((x) => x.id === n.characterId);
-        if (c) this.toast(n.kind === "arrived" ? "notice.arrived" : "notice.blocked", { name: c.name, gender: c.gender });
+      switch (n.kind) {
+        case "revealed":
+          reveal = n.origin;
+          break;
+        case "discovered": {
+          const place = world.map.places.find((p) => p.id === n.placeId);
+          if (place) this.toast("notice.discovered", { name: place.name }, { kind: `place.${place.kind}` });
+          break;
+        }
+        case "arrived":
+        case "blocked": {
+          const c = character(n.characterId);
+          if (c) this.toast(n.kind === "arrived" ? "notice.arrived" : "notice.blocked", { name: c.name, gender: c.gender });
+          break;
+        }
+        case "build_started": {
+          const c = character(n.characterId);
+          if (c) this.toast("notice.buildStarted", { name: c.name }, { kind: outpostKind(n.outpostId) });
+          break;
+        }
+        case "build_failed": {
+          const c = character(n.characterId);
+          if (c) this.toast("notice.buildFailed", { name: c.name }, { reason: `reason.${n.reason}` });
+          break;
+        }
+        case "outpost_ready":
+          this.toast("notice.outpostReady", {}, { kind: outpostKind(n.outpostId) });
+          break;
+        case "workshop_ready": {
+          const w = world.state.workshops.find((x) => x.id === n.workshopId);
+          if (w) this.toast("notice.workshopReady", {}, { kind: `workshop.${w.recipe}` });
+          break;
+        }
       }
     }
     this.revealFrom = reveal;
@@ -134,6 +172,7 @@ class Game {
   tapHex(hex: Hex): void {
     const world = this.world;
     if (!world) return;
+    this.showGuild = false;
     const gameNow = gameTimeAt(world.state.clock, Date.now());
     const here = world.state.characters.filter((c) => hexEquals(currentHex(c, gameNow), hex));
     if (here.length > 0) {
@@ -149,28 +188,49 @@ class Game {
   selectCharacter(id: number): void {
     this.selectedId = id;
     this.selectedHex = undefined;
+    this.showGuild = false;
   }
 
   /** Manda il personaggio selezionato verso la casella selezionata. */
   sendSelected(): CommandResult | undefined {
-    const world = this.world;
     const target = this.selectedHex;
-    if (!world || !target || this.selectedId === undefined) return undefined;
-    this.tick();
-    const result = applyCommand(world, { kind: "move", characterId: this.selectedId, target });
-    if (result.ok) this.selectedHex = undefined;
-    this.version++;
-    this.persist();
+    if (!target || this.selectedId === undefined) return undefined;
+    const result = this.command({ kind: "move", characterId: this.selectedId, target });
+    if (result?.ok) this.selectedHex = undefined;
     return result;
   }
 
   stopSelected(): void {
+    if (this.selectedId === undefined) return;
+    this.command({ kind: "stop", characterId: this.selectedId });
+  }
+
+  /** Il costruttore selezionato va sulla casella selezionata e ci fonda un avamposto. */
+  buildOutpost(): CommandResult | undefined {
+    const target = this.selectedHex;
+    if (!target || this.selectedId === undefined) return undefined;
+    const result = this.command({ kind: "build_outpost", characterId: this.selectedId, target });
+    if (result?.ok) this.selectedHex = undefined;
+    return result;
+  }
+
+  buildWorkshop(recipe: RecipeId): CommandResult | undefined {
+    return this.command({ kind: "build_workshop", recipe });
+  }
+
+  toggleWorkshop(workshopId: number): void {
+    this.command({ kind: "toggle_workshop", workshopId });
+  }
+
+  /** Esegue un comando all'ora attuale del mondo. */
+  private command(command: Command): CommandResult | undefined {
     const world = this.world;
-    if (!world || this.selectedId === undefined) return;
+    if (!world) return undefined;
     this.tick();
-    applyCommand(world, { kind: "stop", characterId: this.selectedId });
+    const result = applyCommand(world, command);
     this.version++;
     this.persist();
+    return result;
   }
 
   changeSpeed(speed: number): void {
@@ -195,13 +255,22 @@ class Game {
     this.persist();
   }
 
+  /** Strumento di prova: monete in regalo. */
+  addGold(amount: number): void {
+    const world = this.world;
+    if (!world) return;
+    grantGold(world, amount);
+    this.version++;
+    this.persist();
+  }
+
   dismissToast(id: number): void {
     this.toasts = this.toasts.filter((t) => t.id !== id);
   }
 
-  private toast(key: string, values: Record<string, string | number>): void {
+  private toast(key: string, values: Record<string, string | number>, refs: Record<string, string> = {}): void {
     const id = ++this.toastSeq;
-    this.toasts = [...this.toasts.slice(-2), { id, key, values }];
+    this.toasts = [...this.toasts.slice(-2), { id, key, values, refs }];
     setTimeout(() => this.dismissToast(id), TOAST_MS);
   }
 

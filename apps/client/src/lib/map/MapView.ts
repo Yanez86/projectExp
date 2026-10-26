@@ -30,9 +30,12 @@ const WOBBLE_PX = 1.2;
 const WOBBLE_CHECK_MS = 150;
 /** Margine attorno a una casella per decidere se è sullo schermo: le nuvole sbordano. */
 const CULL_MARGIN = 8;
-/** I piedi di un personaggio rispetto al centro della casella; sulla sede, davanti alla casa. */
+/**
+ * I piedi di un personaggio rispetto al centro della casella; dove c'è un edificio (la sede, un
+ * luogo, un avamposto), davanti, per non coprirlo.
+ */
 const FEET_DY = 5;
-const FEET_DY_GUILD = 13;
+const FEET_DY_BUILT = 13;
 /** Distanza tra personaggi fermi sulla stessa casella, e saltello di chi cammina. */
 const CROWD_DX = 10;
 const HOP_MS = 160;
@@ -124,6 +127,10 @@ export class MapView {
   private fog: Fog | undefined;
   private game: World | undefined;
   private characters = new Map<number, CharacterSprites>();
+  /** Per ogni casella con un avamposto, il disegno che mostra ora (cantiere o avamposto). */
+  private outposts = new Map<number, string>();
+  /** Le caselle con un edificio: chi ci sta fermo si mette davanti. */
+  private built = new Set<string>();
   private ring: Sprite | undefined;
   private selectedCharacter: number | undefined;
   private fogEnabled = true;
@@ -229,6 +236,8 @@ export class MapView {
     }
     this.hexes = [];
     this.characters.clear();
+    this.outposts.clear();
+    this.built = new Set([hexKey(map.start), ...map.places.map((p) => hexKey(p.hex))]);
     this.ring = undefined;
     this.guild = undefined;
     this.reveals.clear();
@@ -309,6 +318,35 @@ export class MapView {
     this.ring ??= this.addSprite(this.objectLayer, this.texture("char_ring"), 0, 0);
     this.ring.anchor.set(0.5);
     this.refreshCharacters();
+    this.refreshOutposts();
+  }
+
+  /** Da chiamare quando cambiano gli avamposti: prendono il posto del rilievo della casella. */
+  refreshOutposts(): void {
+    const { game: world, map } = this;
+    if (!world || !map) return;
+    for (const outpost of world.state.outposts) {
+      const i = tileIndex(map, outpost.hex);
+      const hs = this.hexes[i];
+      const name = outpost.readyAt === null ? `outpost_${outpost.kind}` : "outpost_site";
+      if (!hs || this.outposts.get(i) === name) continue;
+      this.outposts.set(i, name);
+      this.built.add(hexKey(outpost.hex));
+      if (hs.relief) hs.relief.texture = this.texture(name);
+      else {
+        hs.relief = this.addSprite(this.objectLayer, this.texture(name), hs.x, hs.y);
+        hs.relief.zIndex = hexToOffset(outpost.hex).row * 2;
+      }
+      // Le luci di notte, se il disegno ne ha (il cantiere no).
+      const glow = this.textures.get(`${name}_glow`);
+      if (glow && hs.glow) hs.glow.texture = glow;
+      else if (glow) hs.glow = this.addSprite(this.lights, glow, hs.x, hs.y);
+      else {
+        hs.glow?.destroy();
+        hs.glow = undefined;
+      }
+    }
+    this.requestRender();
   }
 
   setSelectedCharacter(id: number | undefined): void {
@@ -529,7 +567,6 @@ export class MapView {
     if (!world) return false;
     const gameNow = gameTimeAt(world.state.clock, Date.now());
     const hop = Math.floor(performance.now() / HOP_MS) % 2;
-    const guildKey = hexKey(world.state.guild.hex);
     // Chi è fermo sulla stessa casella si mette in fila, uno accanto all'altro.
     const crowds = new Map<string, number[]>();
     for (const c of world.state.characters) {
@@ -558,7 +595,7 @@ export class MapView {
         const crowd = crowds.get(key) ?? [c.id];
         const center = hexCenter(c.hex);
         x = center.x + (crowd.indexOf(c.id) - (crowd.length - 1) / 2) * CROWD_DX;
-        y = center.y + (key === guildKey ? FEET_DY_GUILD : FEET_DY);
+        y = center.y + (this.built.has(key) ? FEET_DY_BUILT : FEET_DY);
       }
       x = Math.round(x);
       y = Math.round(y);

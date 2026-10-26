@@ -1,6 +1,6 @@
 # Piano tecnico (bozza v0.1)
 
-> Stato: approvato; prima e seconda tappa fatte. Il design del gioco è in [GDD.md](GDD.md).
+> Stato: approvato; prime tre tappe fatte. Il design del gioco è in [GDD.md](GDD.md).
 
 ## 1. Obiettivi
 
@@ -46,10 +46,13 @@ Il server andrà in `apps/server/`.
 - **Deterministica**: stesso seed e stessi comandi danno lo stesso mondo, su qualsiasi
   dispositivo. Numeri casuali da un generatore con seed, quantità intere (i decimali possono dare
   risultati diversi su dispositivi diversi).
-- **A eventi con flussi**: tra un evento e l'altro le materie scorrono a ritmo costante (avamposti
-  → gilda → linee di produzione). Il motore calcola quando qualcosa cambia (un magazzino si svuota
-  o si riempie, un viaggio finisce, una ricerca termina) e salta direttamente lì. Recuperare
-  giorni di assenza costa quindi poche operazioni, non un calcolo secondo per secondo.
+- **A eventi**: il motore tiene una coda di eventi (un passo finito, un raccolto, un ciclo di
+  laboratorio finito, un cantiere chiuso) e salta dall'uno all'altro, senza calcolare secondo per
+  secondo. Anche l'economia va a cicli e non a flussi continui: ogni raccolto e ogni ciclo è un
+  evento, con quantità intere. Una settimana di assenza con dieci avamposti e quattro laboratori
+  sono circa duemila eventi, una decina di millisecondi; con i flussi continui servirebbero
+  decimali e regole per dividere una materia scarsa tra più laboratori. Se un giorno il recupero
+  diventerà pesante, si potranno riassumere più cicli in un evento solo.
 - Le gilde IA ragionano a intervalli regolari, anche loro come eventi.
 - Tempo di gioco = tempo reale × velocità del mondo. L'orologio del mondo ricorda un istante in
   cui tempo reale e di gioco erano allineati e la velocità: cambiare velocità lo riallinea.
@@ -151,6 +154,18 @@ le nuvole coprono ciò che non è stato esplorato.
   degli esploratori, l'orologio del mondo, gli avvisi, il salvataggio e il recupero del tempo
   passato a gioco chiuso.
 
-## 11. Domande aperte
+## 11. Terza tappa: avamposti e laboratori (fatta)
+
+- `core`: materie, avamposti e ricette come dati (`content/materials.ts`, `outposts.ts`,
+  `recipes.ts`, `guild.ts`); monete e magazzino della gilda; comandi per fondare un avamposto
+  (il costruttore ci va e apre il cantiere all'arrivo), costruire un laboratorio, metterlo in
+  pausa; eventi di cantiere, raccolto e ciclo (`sim/economy.ts`). Il formato dei salvataggi è
+  alla versione 2: quelli vecchi ricominciano.
+- `art`: i sette avamposti, il cantiere, le icone delle materie e la moneta.
+- `client`: gli avamposti sulla mappa al posto del rilievo, con le luci di notte; il pulsante
+  "Costruisci qui" per il costruttore, con il raccolto previsto o il motivo per cui non si può;
+  il pannello della sede (magazzino, laboratori, avamposti) dal pulsante con le monete in alto.
+
+## 12. Domande aperte
 
 1. Su mobile il gioco va solo in orizzontale o anche in verticale?

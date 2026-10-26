@@ -3,6 +3,7 @@
   import { gameTimeAt, previewRoute } from "@exp/core";
   import ContextPanel from "./components/ContextPanel.svelte";
   import DebugPanel from "./components/DebugPanel.svelte";
+  import GuildPanel from "./components/GuildPanel.svelte";
   import Roster from "./components/Roster.svelte";
   import Toasts from "./components/Toasts.svelte";
   import TopBar from "./components/TopBar.svelte";
@@ -63,6 +64,7 @@
     void game.version;
     view?.refreshFog(game.revealFrom);
     view?.refreshCharacters();
+    view?.refreshOutposts();
   });
   $effect(() => {
     view?.setFogEnabled(game.fogEnabled);
@@ -121,7 +123,11 @@
   <div class="bottom">
     <div class="left">
       <Roster />
-      <ContextPanel />
+      {#if game.showGuild}
+        <GuildPanel />
+      {:else}
+        <ContextPanel />
+      {/if}
     </div>
     <ZoomControls onZoom={(steps) => view?.zoomBy(steps)} />
   </div>
