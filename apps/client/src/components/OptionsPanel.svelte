@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { LOCALES, isLocale } from "@exp/core";
   import { MAP_SIZES, SPEEDS, game, randomSeed, type MapSize } from "../lib/game.svelte";
   import { i18n } from "../lib/i18n.svelte";
 
@@ -6,13 +7,27 @@
 </script>
 
 <form
-  class="panel"
+  class="options"
   onsubmit={(e) => {
     e.preventDefault();
     game.newGame();
   }}
 >
-  <h2>{i18n.t("debug.title")}</h2>
+  <label class="row">
+    <span>{i18n.t("language.label")}</span>
+    <select
+      value={i18n.locale}
+      onchange={(e) => {
+        const value = e.currentTarget.value;
+        if (isLocale(value)) i18n.setLocale(value);
+      }}
+    >
+      {#each LOCALES as locale (locale)}
+        <option value={locale}>{i18n.t(`language.${locale}`)}</option>
+      {/each}
+    </select>
+  </label>
+  <h3>{i18n.t("debug.title")}</h3>
   <label class="row">
     <span>{i18n.t("debug.speed")}</span>
     <select value={game.speed} onchange={(e) => game.changeSpeed(Number(e.currentTarget.value))}>
@@ -66,22 +81,16 @@
 </form>
 
 <style>
-  .panel {
-    align-self: flex-end;
-    width: min(260px, calc(100vw - 16px));
-    margin-top: 8px;
+  .options {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    background: var(--panel);
-    border: 1px solid var(--panel-border);
-    border-radius: var(--radius);
-    padding: 10px 12px;
   }
 
-  h2 {
-    margin: 0;
-    font-size: 0.95rem;
+  h3 {
+    margin: 6px 0 0;
+    font-size: 0.85rem;
+    color: var(--accent);
   }
 
   .row {

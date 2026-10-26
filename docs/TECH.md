@@ -92,6 +92,11 @@ Il server andrà in `apps/server/`.
 - Ogni cambio al generatore ne alza la versione (`MAP_GENERATOR_VERSION`, ora 2): i salvataggi
   vecchi non coincidono più e si comincia una partita nuova.
 - Comandi: trascini per spostarti, rotella o pizzico per lo zoom, tocco per selezionare.
+- Interfaccia (`App.svelte`): a sinistra il menu (`Rail.svelte`: ora, monete, Unità, Sede, zoom,
+  Opzioni); accanto il pannello aperto (`Drawer.svelte`), che sugli schermi stretti copre la
+  mappa invece di spingerla; in basso, solo quando qualcosa è selezionato, la scheda
+  (`ContextPanel.svelte`) con i comandi. Cosa fa un'unità, a parole, sta in `lib/status.ts` e
+  serve sia all'elenco sia alla scheda.
 - Vista con linea di visuale: per ogni casella entro il raggio si traccia la retta di esagoni dal
   punto di vista; le caselle in mezzo possono fermarla (montagne) o lasciarla passare per poco
   (foreste). Si provano due rette spostate di un soffio da parti opposte: se una è libera, la

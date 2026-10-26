@@ -2,12 +2,12 @@
   import { onMount } from "svelte";
   import { gameTimeAt, previewRoute } from "@exp/core";
   import ContextPanel from "./components/ContextPanel.svelte";
-  import DebugPanel from "./components/DebugPanel.svelte";
+  import Drawer from "./components/Drawer.svelte";
   import GuildPanel from "./components/GuildPanel.svelte";
-  import Roster from "./components/Roster.svelte";
+  import OptionsPanel from "./components/OptionsPanel.svelte";
+  import Rail from "./components/Rail.svelte";
   import Toasts from "./components/Toasts.svelte";
-  import TopBar from "./components/TopBar.svelte";
-  import ZoomControls from "./components/ZoomControls.svelte";
+  import UnitsPanel from "./components/UnitsPanel.svelte";
   import { game } from "./lib/game.svelte";
   import { MapView } from "./lib/map/MapView";
   import { daylight } from "./lib/map/daylight";
@@ -17,10 +17,10 @@
 
   /** Ogni quanto il gioco porta il mondo all'ora attuale. */
   const TICK_MS = 250;
+  const DRAWER_TITLES = { units: "units.title", guild: "guild.title", options: "options.title" } as const;
 
   let host: HTMLDivElement;
   let view = $state<MapView | undefined>();
-  let showDebug = $state(false);
   /** Se il gioco non riesce a partire, il motivo: meglio un messaggio che uno schermo vuoto. */
   let startError = $state<string | undefined>();
 
@@ -92,6 +92,11 @@
   $effect(() => {
     view?.setSelectedCharacter(game.selectedId);
   });
+  // Scelta un'unità dall'elenco, la mappa va da lei.
+  $effect(() => {
+    const focus = game.focus;
+    if (focus) view?.centerOn(focus.hex);
+  });
   // Il percorso del personaggio selezionato, o quello che farebbe verso la casella selezionata.
   $effect(() => {
     void game.version;
@@ -116,20 +121,22 @@
 <div class="map" bind:this={host}></div>
 
 <div class="hud">
-  <TopBar bind:showDebug />
-  {#if showDebug}
-    <DebugPanel />
-  {/if}
-  <div class="bottom">
-    <div class="left">
-      <Roster />
-      {#if game.showGuild}
+  <Rail onZoom={(steps) => view?.zoomBy(steps)} />
+  {#if game.drawer}
+    <Drawer title={i18n.t(DRAWER_TITLES[game.drawer])} onClose={() => (game.drawer = undefined)}>
+      {#if game.drawer === "units"}
+        <UnitsPanel />
+      {:else if game.drawer === "guild"}
         <GuildPanel />
       {:else}
-        <ContextPanel />
+        <OptionsPanel />
       {/if}
-    </div>
-    <ZoomControls onZoom={(steps) => view?.zoomBy(steps)} />
+    </Drawer>
+  {/if}
+  <div class="stage">
+    {#if game.selectedId !== undefined || game.selectedHex}
+      <ContextPanel />
+    {/if}
   </div>
 </div>
 <Toasts />
@@ -147,29 +154,31 @@
     inset: 0;
   }
 
+  /* Il menu a sinistra, il pannello aperto accanto e, nello spazio che resta, la scheda di ciò
+     che è selezionato. */
   .hud {
     position: absolute;
     inset: 0;
     display: flex;
-    flex-direction: column;
-    justify-content: space-between;
+    align-items: stretch;
+    gap: 8px;
     padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right))
       max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
     pointer-events: none;
   }
 
-  .hud :global(> *),
-  .bottom :global(> *),
-  .left :global(> *) {
+  .hud > :global(:not(.stage)),
+  .stage :global(> *) {
     pointer-events: auto;
   }
 
-  .bottom {
+  .stage {
+    flex: 1;
+    min-width: 0;
     display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 8px;
-    pointer-events: none;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: flex-start;
   }
 
   .error {
@@ -204,12 +213,5 @@
     border: none;
     border-radius: var(--radius);
     font-weight: 600;
-  }
-
-  .left {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    pointer-events: none;
   }
 </style>

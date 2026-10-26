@@ -23,6 +23,10 @@ linee di produzione e vende alle città sparse sulla mappa.
 - I personaggi si muovono sulla mappa a gruppi: tocchi il gruppo, poi la destinazione.
 - Tempo reale da orologio e round di ampio respiro, come in Travian e OGame.
 - Economia ed esplorazione al centro; il combattimento è secondario.
+- Interfaccia: la mappa occupa tutto lo schermo; a sinistra un menu a icone apre i pannelli. Il
+  primo è **Unità**: l'elenco delle unità della gilda, con il mestiere e cosa stanno facendo
+  (ferme, in viaggio, al lavoro); toccandone una la si seleziona e la si comanda dalla sua scheda.
+  Poi la **Sede** (monete, magazzino, laboratori, avamposti) e le **Opzioni**.
 
 ## 3. Il ciclo di gioco
 

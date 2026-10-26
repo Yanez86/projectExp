@@ -41,6 +41,9 @@ export interface Toast {
   readonly refs: Record<string, string>;
 }
 
+/** I pannelli che si aprono dal menu a sinistra. */
+export type Drawer = "units" | "guild" | "options";
+
 export function randomSeed(): string {
   return Math.random().toString(36).slice(2, 8);
 }
@@ -72,8 +75,10 @@ class Game {
   ambienceEnabled = $state(!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
   selectedHex = $state<Hex | undefined>(undefined);
   selectedId = $state<number | undefined>(undefined);
-  /** Il pannello della sede (magazzino e laboratori) al posto di quello della selezione. */
-  showGuild = $state(false);
+  /** Il pannello aperto dal menu a sinistra, se ce n'è uno. */
+  drawer = $state<Drawer | undefined>(undefined);
+  /** Una casella su cui centrare la mappa: un oggetto nuovo a ogni richiesta. */
+  focus = $state<{ hex: Hex } | undefined>(undefined);
   toasts = $state<Toast[]>([]);
   /** Da dove si aprono le nuvole all'ultimo cambio; nessuno se il cambio è di colpo. */
   revealFrom: Hex | undefined = undefined;
@@ -105,8 +110,7 @@ class Game {
   private adopt(world: World): void {
     this.world = world;
     this.selectedHex = undefined;
-    this.selectedId = world.state.characters[0]?.id;
-    this.showGuild = false;
+    this.selectedId = undefined;
     this.revealFrom = undefined;
     this.now = Date.now();
     this.version++;
@@ -172,7 +176,6 @@ class Game {
   tapHex(hex: Hex): void {
     const world = this.world;
     if (!world) return;
-    this.showGuild = false;
     const gameNow = gameTimeAt(world.state.clock, Date.now());
     const here = world.state.characters.filter((c) => hexEquals(currentHex(c, gameNow), hex));
     if (here.length > 0) {
@@ -185,10 +188,23 @@ class Game {
     this.selectedHex = hex;
   }
 
-  selectCharacter(id: number): void {
+  /** Seleziona un personaggio; con `focus`, la mappa si centra su di lui. */
+  selectCharacter(id: number, focus = false): void {
     this.selectedId = id;
     this.selectedHex = undefined;
-    this.showGuild = false;
+    const world = this.world;
+    const c = world?.state.characters.find((x) => x.id === id);
+    if (focus && world && c) this.focus = { hex: currentHex(c, gameTimeAt(world.state.clock, Date.now())) };
+  }
+
+  clearSelection(): void {
+    this.selectedId = undefined;
+    this.selectedHex = undefined;
+  }
+
+  /** Apre un pannello del menu, o lo chiude se è già aperto. */
+  toggleDrawer(drawer: Drawer): void {
+    this.drawer = this.drawer === drawer ? undefined : drawer;
   }
 
   /** Manda il personaggio selezionato verso la casella selezionata. */

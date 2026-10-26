@@ -8,11 +8,9 @@
     STAT_IDS,
     biomeIdAt,
     checkOutpostSite,
-    estimateArrival,
     fogAt,
     hexEquals,
     outpostAt,
-    outpostKindFor,
     placeAt,
     previewRoute,
     realDelay,
@@ -24,6 +22,7 @@
   import { formatDuration } from "../lib/format";
   import { game } from "../lib/game.svelte";
   import { i18n } from "../lib/i18n.svelte";
+  import { unitStatus } from "../lib/status";
   import Token from "./Token.svelte";
 
   const FOG_KEYS = ["fog.unexplored", "fog.explored", "fog.visible"];
@@ -68,11 +67,7 @@
     const outpost = world.state.outposts.find((o) => o.id === task.outpostId);
     return outpost ? { ...outpost } : undefined;
   });
-  /** Cosa va a costruire, se è in viaggio per farlo. */
-  let goingToBuild = $derived.by(() => {
-    const task = character?.task;
-    return world && task?.kind === "build" ? outpostKindFor(biomeIdAt(world.map, task.hex)) : undefined;
-  });
+  let status = $derived(world && character ? unitStatus(world, character, game.now, i18n.t) : undefined);
 
   /** Se il costruttore selezionato può fondare un avamposto sulla casella selezionata. */
   let site = $derived.by((): SiteCheck | { readonly ok: false; readonly reason: BuildProblem } | undefined => {
@@ -103,14 +98,6 @@
     });
   }
 
-  /** Quanto manca all'arrivo, in tempo reale. */
-  let eta = $derived.by(() => {
-    void game.version;
-    if (!world || !character) return undefined;
-    const at = estimateArrival(world, character);
-    return at === null ? undefined : realDelay(world.state.clock, at, game.now);
-  });
-
   /** Dove andrebbe e in quanto, se lo mandassimo sulla casella selezionata. */
   let preview = $derived.by(() => {
     void game.version;
@@ -122,29 +109,27 @@
   });
 </script>
 
+{#snippet close()}
+  <button type="button" class="close" onclick={() => game.clearSelection()}>
+    <span aria-hidden="true">✕</span>
+    <span class="visually-hidden">{i18n.t("action.close")}</span>
+  </button>
+{/snippet}
+
 <section class="panel" aria-live="polite">
   {#if character}
     <header>
       <Token name="char_{character.ethnicity}" />
-      <div>
+      <div class="title">
         <h2>{character.name}</h2>
         <p>
-          {i18n.t(`ethnicity.${character.ethnicity}`, { gender: character.gender })} ·
-          {i18n.t(`job.${character.job}`, { gender: character.gender })}
+          {i18n.t(`job.${character.job}`, { gender: character.gender })} ·
+          {i18n.t(`ethnicity.${character.ethnicity}`, { gender: character.gender })}
         </p>
       </div>
+      {@render close()}
     </header>
-    <p class="status">
-      {#if building?.readyAt}
-        {i18n.t("status.building", { kind: i18n.t(`outpost.${building.kind}`), eta: wait(building.readyAt) })}
-      {:else if eta !== undefined && goingToBuild}
-        {i18n.t("status.goingToBuild", { kind: i18n.t(`outpost.${goingToBuild}`), eta: formatDuration(i18n.t, eta) })}
-      {:else if eta !== undefined}
-        {i18n.t("status.travelling", { eta: formatDuration(i18n.t, eta) })}
-      {:else}
-        {i18n.t("status.idle", { gender: character.gender })}
-      {/if}
-    </p>
+    <p class="status">{status?.text}</p>
     <dl class="stats">
       {#each STAT_IDS as stat (stat)}
         <div><dt>{i18n.t(`stat.${stat}`)}</dt><dd>{character.stats[stat]}</dd></div>
@@ -194,26 +179,34 @@
   {:else if hexInfo?.place}
     <header>
       <Token name="place_{hexInfo.place.kind}" scale={1} />
-      <div>
+      <div class="title">
         <h2>{hexInfo.place.name}</h2>
         <p>{i18n.t(`place.${hexInfo.place.kind}`)} · {i18n.t(`biome.${hexInfo.biome}`)}</p>
       </div>
+      {@render close()}
     </header>
     <p class="about">{i18n.t(`place.${hexInfo.place.kind}.about`)}</p>
   {:else if hexInfo}
-    <h2>{hexInfo.biome ? i18n.t(`biome.${hexInfo.biome}`) : i18n.t("fog.unexplored")}</h2>
-    <p class:dim={hexInfo.dim}>
-      {i18n.t("hex.title", { q: hexInfo.hex.q, r: hexInfo.hex.r })} · {i18n.t(hexInfo.fogKey)}
-    </p>
+    <header>
+      <div class="title">
+        <h2>
+          {#if hexInfo.outpost}{i18n.t(`outpost.${hexInfo.outpost.kind}`)} ·{/if}
+          {hexInfo.biome ? i18n.t(`biome.${hexInfo.biome}`) : i18n.t("fog.unexplored")}
+        </h2>
+        <p class:dim={hexInfo.dim}>
+          {i18n.t("hex.title", { q: hexInfo.hex.q, r: hexInfo.hex.r })} · {i18n.t(hexInfo.fogKey)}
+        </p>
+      </div>
+      {@render close()}
+    </header>
     {#if hexInfo.guild}<p class="accent">{i18n.t("hex.start")}</p>{/if}
-  {:else}
-    <p class="hint">{i18n.t("hint.select")}</p>
+    {#if hexInfo.outpost}<p class="about">{outpostLine(hexInfo.outpost)}</p>{/if}
   {/if}
 </section>
 
 <style>
   .panel {
-    width: min(340px, calc(100vw - 72px));
+    width: min(340px, 100%);
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -227,6 +220,11 @@
     display: flex;
     align-items: center;
     gap: 10px;
+  }
+
+  .title {
+    flex: 1;
+    min-width: 0;
   }
 
   h2 {
@@ -297,6 +295,23 @@
     border: 1px solid var(--panel-border);
     border-radius: var(--radius);
     padding: 0 12px;
+  }
+
+  .close {
+    width: 36px;
+    min-height: 36px;
+    flex: none;
+    align-self: flex-start;
+    padding: 0;
+  }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .primary {

@@ -3895,6 +3895,86 @@
     "w": 10,
     "h": 10
    }
+  },
+  "ui_units": {
+   "frame": {
+    "x": 128,
+    "y": 561,
+    "w": 12,
+    "h": 12
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   },
+   "sourceSize": {
+    "w": 12,
+    "h": 12
+   }
+  },
+  "ui_options": {
+   "frame": {
+    "x": 141,
+    "y": 561,
+    "w": 12,
+    "h": 12
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   },
+   "sourceSize": {
+    "w": 12,
+    "h": 12
+   }
+  },
+  "ui_sun": {
+   "frame": {
+    "x": 154,
+    "y": 561,
+    "w": 13,
+    "h": 13
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 13,
+    "h": 13
+   },
+   "sourceSize": {
+    "w": 13,
+    "h": 13
+   }
+  },
+  "ui_moon": {
+   "frame": {
+    "x": 168,
+    "y": 561,
+    "w": 13,
+    "h": 13
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 13,
+    "h": 13
+   },
+   "sourceSize": {
+    "w": 13,
+    "h": 13
+   }
   }
  },
  "meta": {
@@ -3903,7 +3983,7 @@
   "format": "RGBA8888",
   "size": {
    "w": 581,
-   "h": 573
+   "h": 574
   },
   "scale": "1"
  }

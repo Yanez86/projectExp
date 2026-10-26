@@ -77,19 +77,9 @@
   </span>
 {/snippet}
 
-<section class="panel" aria-label={i18n.t("guild.title")}>
-  <header>
-    <h2>{i18n.t("guild.title")}</h2>
-    {#if view}
-      <span class="gold"><Token name="coin" scale={2} />{i18n.t("gold", { n: view.gold })}</span>
-    {/if}
-    <button type="button" class="close" onclick={() => (game.showGuild = false)}>
-      <span aria-hidden="true">✕</span>
-      <span class="visually-hidden">{i18n.t("guild.close")}</span>
-    </button>
-  </header>
-
+<div class="guild">
   {#if view}
+    <p class="gold"><Token name="coin" scale={2} />{i18n.t("gold", { n: view.gold })}</p>
     <h3>{i18n.t("guild.storage")}</h3>
     {#if view.stock.length === 0}
       <p class="muted">{i18n.t("guild.storage.empty")}</p>
@@ -181,36 +171,17 @@
       {/each}
     </ul>
   {/if}
-</section>
+</div>
 
 <style>
-  .panel {
-    width: min(360px, calc(100vw - 72px));
-    max-height: calc(100dvh - 150px);
-    overflow-y: auto;
+  .guild {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    background: var(--panel);
-    border: 1px solid var(--panel-border);
-    border-radius: var(--radius);
-    padding: 8px 12px 10px;
-  }
-
-  header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  h2 {
-    margin: 0;
-    font-size: 1rem;
-    flex: 1;
   }
 
   h3 {
-    margin: 6px 0 0;
+    margin: 4px 0 0;
     font-size: 0.85rem;
     color: var(--accent);
   }
@@ -229,7 +200,7 @@
   }
 
   .gold {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: 4px;
     font-size: 0.85rem;
@@ -338,19 +309,5 @@
 
   button:disabled {
     opacity: 0.5;
-  }
-
-  button.close {
-    min-width: 36px;
-    padding: 0;
-  }
-
-  .visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
   }
 </style>
