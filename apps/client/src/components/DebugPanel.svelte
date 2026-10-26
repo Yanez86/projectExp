@@ -21,6 +21,7 @@
       {/each}
     </select>
   </label>
+  <button type="button" onclick={() => game.skip(6)}>{i18n.t("debug.skip", { hours: 6 })}</button>
   <label class="row">
     <span>{i18n.t("debug.seed")}</span>
     <input bind:value={game.seed} autocomplete="off" spellcheck="false" />
@@ -50,6 +51,14 @@
   <label class="check">
     <input type="checkbox" bind:checked={game.gridEnabled} />
     {i18n.t("debug.grid")}
+  </label>
+  <label class="check">
+    <input type="checkbox" bind:checked={game.dayNightEnabled} />
+    {i18n.t("debug.dayNight")}
+  </label>
+  <label class="check">
+    <input type="checkbox" bind:checked={game.ambienceEnabled} />
+    {i18n.t("debug.ambience")}
   </label>
 </form>
 

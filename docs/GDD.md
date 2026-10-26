@@ -54,6 +54,12 @@ linee di produzione e vende alle città sparse sulla mappa.
 - [Deciso] Vista: in pianura si vede fino a 4 caselle. Le montagne bloccano la vista di ciò che
   sta dietro (la montagna si vede). Attraverso una foresta si vede la foresta e solo una casella
   dietro.
+- [Proposta] Le caselle esplorate ma fuori vista hanno un velo leggero di foschia: si vedono,
+  ma è l'ultima situazione nota.
+- [Proposta] Atmosfera (solo estetica): il giorno e la notte seguono l'orologio del mondo (alba,
+  giorno, tramonto, notte blu con le finestre della sede accese); ombre sotto alberi, montagne,
+  colline e sede; ombre di nuvole portate dal vento; stormi di uccelli con la loro ombra, di
+  giorno. Uccelli e ombre di nuvole si spengono se il sistema chiede meno movimento.
 - [Proposta] Gli altri terreni aperti (deserto, tundra, palude) vedono come la pianura, a 4
   caselle. Dalle colline si vede a 5, dalle montagne a 6, e dalle alture si vede sopra le
   foreste (non sopra le montagne). Con Occhio 7 o più si vede una casella in più. La sede vede

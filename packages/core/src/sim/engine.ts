@@ -217,6 +217,16 @@ export function setSpeed(world: World, speed: number, realNow: number): void {
   state.clock = { realAt: realNow, gameAt: gameTimeAt(state.clock, realNow), speed };
 }
 
+/**
+ * Strumento di prova: manda avanti il mondo di `ms` di tempo di gioco, eseguendo tutto quello che
+ * succede nel frattempo, come se fosse passato davvero.
+ */
+export function skipAhead(world: World, ms: number, realNow: number): Notice[] {
+  const { state } = world;
+  state.clock = { realAt: realNow, gameAt: gameTimeAt(state.clock, realNow) + ms, speed: state.clock.speed };
+  return syncTo(world, realNow);
+}
+
 /** Quando arriverà a destinazione (tempo di gioco), secondo quello che la gilda sa ora. */
 export function estimateArrival(world: World, character: Character): number | null {
   if (!character.destination) return null;

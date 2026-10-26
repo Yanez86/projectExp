@@ -85,6 +85,10 @@ Il server andrà in `apps/server/`.
   (foreste). Si provano due rette spostate di un soffio da parti opposte: se una è libera, la
   casella si vede, così la vista lungo i lati non dipende da un arrotondamento. Le regole stanno
   in `packages/core/src/content/vision.ts`.
+- Atmosfera, solo nel client: un contenitore con tutta la scena prende la tinta dell'ora
+  (`daylight.ts`); sopra, senza tinta, le luci della sede. Ombre di nuvole e stormi
+  (`Ambience.ts`) usano numeri casuali veri perché non toccano la simulazione; si ridisegna solo
+  quando qualcosa si sposta di un pixel intero.
 
 ## 6. Grafica
 

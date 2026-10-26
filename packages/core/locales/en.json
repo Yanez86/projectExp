@@ -10,7 +10,7 @@
   "biome.desert": "Desert",
   "biome.tundra": "Tundra",
   "fog.unexplored": "Unexplored",
-  "fog.explored": "Explored, out of sight",
+  "fog.explored": "Explored, out of sight (mist)",
   "fog.visible": "In sight",
   "hex.title": "Hex {q}, {r}",
   "hex.start": "Guild headquarters",
@@ -58,5 +58,8 @@
   "hint.select": "Tap an explorer, then a hex to send them there.",
   "debug.speed": "Speed",
   "debug.newGame": "New game",
-  "hint.send": "Tap a hex to send them there."
+  "hint.send": "Tap a hex to send them there.",
+  "debug.dayNight": "Day and night",
+  "debug.ambience": "Birds and cloud shadows",
+  "debug.skip": "Skip {hours} hours"
 }

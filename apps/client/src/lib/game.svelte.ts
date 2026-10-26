@@ -6,6 +6,7 @@ import {
   hexEquals,
   serializeWorld,
   setSpeed,
+  skipAhead,
   syncTo,
   type Character,
   type CommandResult,
@@ -61,6 +62,9 @@ class Game {
   speed = $state<number>(DEFAULT_SPEED);
   fogEnabled = $state(true);
   gridEnabled = $state(true);
+  dayNightEnabled = $state(true);
+  /** Uccelli e ombre di nuvole; spenti se il sistema chiede meno movimento. */
+  ambienceEnabled = $state(!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
   selectedHex = $state<Hex | undefined>(undefined);
   selectedId = $state<number | undefined>(undefined);
   toasts = $state<Toast[]>([]);
@@ -172,6 +176,18 @@ class Game {
     if (!world) return;
     this.tick();
     setSpeed(world, speed, Date.now());
+    this.version++;
+    this.persist();
+  }
+
+  /** Strumento di prova: il mondo va avanti di qualche ora. */
+  skip(hours: number): void {
+    const world = this.world;
+    if (!world) return;
+    this.tick();
+    const notices = skipAhead(world, hours * 3_600_000, Date.now());
+    this.handle(notices);
+    this.now = Date.now();
     this.version++;
     this.persist();
   }

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { previewRoute } from "@exp/core";
+  import { gameTimeAt, previewRoute } from "@exp/core";
   import ContextPanel from "./components/ContextPanel.svelte";
   import DebugPanel from "./components/DebugPanel.svelte";
   import Roster from "./components/Roster.svelte";
@@ -9,6 +9,7 @@
   import ZoomControls from "./components/ZoomControls.svelte";
   import { game } from "./lib/game.svelte";
   import { MapView } from "./lib/map/MapView";
+  import { daylight } from "./lib/map/daylight";
   import { SHEET_URL } from "./lib/sheet";
 
   /** Ogni quanto il gioco porta il mondo all'ora attuale. */
@@ -58,6 +59,20 @@
   });
   $effect(() => {
     view?.setGridEnabled(game.gridEnabled);
+  });
+  $effect(() => {
+    view?.setAmbienceEnabled(game.ambienceEnabled);
+  });
+  // La luce segue l'ora del mondo.
+  $effect(() => {
+    const world = game.world;
+    if (!view || !world) return;
+    if (!game.dayNightEnabled) {
+      view.setDaylight(0xffffff, 0);
+      return;
+    }
+    const light = daylight(gameTimeAt(world.state.clock, game.now));
+    view.setDaylight(light.tint, light.glow);
   });
   $effect(() => {
     view?.select(game.selectedHex);

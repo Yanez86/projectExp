@@ -10,7 +10,7 @@
   "biome.desert": "Deserto",
   "biome.tundra": "Tundra",
   "fog.unexplored": "Inesplorato",
-  "fog.explored": "Esplorato, fuori vista",
+  "fog.explored": "Esplorato, fuori vista (foschia)",
   "fog.visible": "In vista",
   "hex.title": "Esagono {q}, {r}",
   "hex.start": "Sede della gilda",
@@ -58,5 +58,8 @@
   "hint.select": "Tocca un esploratore, poi un esagono per mandarlo lì.",
   "debug.speed": "Velocità",
   "debug.newGame": "Nuova partita",
-  "hint.send": "Tocca un esagono per {gender, select, f {mandarla} other {mandarlo}} lì."
+  "hint.send": "Tocca un esagono per {gender, select, f {mandarla} other {mandarlo}} lì.",
+  "debug.dayNight": "Giorno e notte",
+  "debug.ambience": "Uccelli e ombre di nuvole",
+  "debug.skip": "Avanti di {hours} ore"
 }

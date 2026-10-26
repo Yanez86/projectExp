@@ -1,6 +1,7 @@
 <script lang="ts">
   import { LOCALES, gameTimeAt, isLocale } from "@exp/core";
   import { formatClock } from "../lib/format";
+  import { daylight } from "../lib/map/daylight";
   import { game } from "../lib/game.svelte";
   import { i18n } from "../lib/i18n.svelte";
 
@@ -14,6 +15,7 @@
     <h1>{i18n.t("app.title")}</h1>
     {#if gameNow !== undefined}
       <span class="clock">
+        <span aria-hidden="true">{daylight(gameNow).night ? "☾" : "☀"}</span>
         {formatClock(i18n.t, gameNow)} · {i18n.t("speed", { speed: game.speed })}
       </span>
     {/if}

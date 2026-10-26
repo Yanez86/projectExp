@@ -14,10 +14,11 @@ import {
   type WorldMap,
 } from "@exp/core";
 import { COL_STEP, HEX_TOP, ROW_STEP, TILE_H, TILE_W, hexAtPoint, hexCenter, tileOrigin } from "./layout";
+import { Ambience } from "./Ambience";
 import { RELIEF, biomeIdOf, edgeOverlays } from "./transitions";
 
-/** Tinta delle caselle esplorate ma fuori vista. */
-const EXPLORED_TINT = 0xb8b8cc;
+/** Velo di foschia sulle caselle esplorate ma fuori vista: il velo delle nuvole, trasparente. */
+const MIST_ALPHA = 0.32;
 /** Spostamento oltre il quale un tocco diventa un trascinamento, in pixel CSS. */
 const TAP_SLOP = 8;
 /** Quanto durano e quanto si allontanano le nuvole che si aprono. */
@@ -65,7 +66,11 @@ interface Reveal {
   start: number;
   dx: number;
   dy: number;
+  /** Quanto velo resta alla fine: foschia se la casella è esplorata ma già fuori vista. */
+  mist: number;
 }
+
+type CloudState = "covered" | "mist" | "clear";
 
 interface CharacterSprites {
   token: Sprite;
@@ -78,12 +83,15 @@ interface CharacterSprites {
  * pixel art resta nitida. Si ridisegna solo quando qualcosa cambia o si muove.
  *
  * Strati, dal basso: terreno, transizioni tra biomi, griglia, rilievo, sede e personaggi (in
- * ordine di profondità), velo delle nuvole, batuffoli, percorso (visibile anche sulle nuvole),
- * selezione.
+ * ordine di profondità), ombre di nuvole e uccelli, velo delle nuvole, batuffoli, uccelli in volo;
+ * tutti questi prendono la luce del giorno. Sopra, senza luce: le finestre accese della sede, il
+ * percorso (visibile anche sulle nuvole), la selezione.
  */
 export class MapView {
   private app = new Application();
   private world = new Container();
+  /** Tutto ciò che prende la luce del giorno e della notte. */
+  private scene = new Container();
   private groundLayer = new Container();
   private edgeLayer = new Container();
   private gridLayer = new Container({ alpha: 0.14 });
@@ -91,7 +99,15 @@ export class MapView {
   private routeLayer = new Container();
   private cloudBaseLayer = new Container();
   private cloudLayer = new Container({ sortableChildren: true });
+  /** Ombre di nuvole e di uccelli, sul terreno; uccelli in volo, sopra le nuvole. */
+  private ambientGround = new Container();
+  private sky = new Container();
+  /** Luci che non si spengono con la notte (le finestre della sede). */
+  private lights = new Container({ alpha: 0 });
   private overlay = new Container();
+  private ambience: Ambience | undefined;
+  private ambienceEnabled = true;
+  private daylightTint = 0xffffff;
   private textures = new Map<string, Texture>();
   private variants = new Map<string, Texture[]>();
   private hexes: HexSprites[] = [];
@@ -152,16 +168,17 @@ export class MapView {
     canvas.style.display = "block";
     canvas.style.touchAction = "none";
     this.host.appendChild(canvas);
-    this.world.addChild(
+    this.scene.addChild(
       this.groundLayer,
       this.edgeLayer,
       this.gridLayer,
       this.objectLayer,
+      this.ambientGround,
       this.cloudBaseLayer,
       this.cloudLayer,
-      this.routeLayer,
-      this.overlay,
+      this.sky,
     );
+    this.world.addChild(this.scene, this.lights, this.routeLayer, this.overlay);
     this.app.stage.addChild(this.world);
 
     const sheet = await Assets.load<Spritesheet>(sheetUrl);
@@ -175,6 +192,11 @@ export class MapView {
       }
     }
     this.zoom = Math.max(1, Math.round(2 * this.dpr));
+    this.ambience = new Ambience(this.ambientGround, this.sky, {
+      bird: [this.texture("bird_0"), this.texture("bird_1")],
+      birdShadow: this.texture("bird_shadow"),
+      cloudShadows: this.variants.get("cloud_shadow") ?? [],
+    });
 
     canvas.addEventListener("pointerdown", this.onPointerDown);
     canvas.addEventListener("pointermove", this.onPointerMove);
@@ -195,7 +217,8 @@ export class MapView {
   setMap(map: WorldMap, fog: Fog): void {
     this.map = map;
     this.fog = fog;
-    for (const layer of [this.groundLayer, this.edgeLayer, this.gridLayer, this.objectLayer, this.routeLayer, this.cloudBaseLayer, this.cloudLayer]) {
+    this.ambience?.clear();
+    for (const layer of [this.groundLayer, this.edgeLayer, this.gridLayer, this.objectLayer, this.routeLayer, this.cloudBaseLayer, this.cloudLayer, this.lights]) {
       layer.removeChildren().forEach((child) => child.destroy());
     }
     this.hexes = [];
@@ -236,11 +259,15 @@ export class MapView {
       this.hexes.push({ x, y, ground, edges, relief, grid, cloudBase, cloud, cloudX, cloudY, phase: (variant / 256) * Math.PI * 2 });
     }
 
-    this.guild = this.addSprite(this.objectLayer, this.texture("guild"), 0, 0);
-    this.guild.anchor.set(0.5, 1);
     const c = hexCenter(map.start);
-    this.guild.position.set(c.x, c.y + 7);
-    this.guild.zIndex = hexToOffset(map.start).row * 2 + 1;
+    const guildDepth = hexToOffset(map.start).row * 2 + 1;
+    const shadow = this.addSprite(this.objectLayer, this.texture("guild_shadow"), c.x + 3, c.y + 6);
+    shadow.anchor.set(0.5);
+    shadow.zIndex = guildDepth - 0.01;
+    this.guild = this.addSprite(this.objectLayer, this.texture("guild"), c.x, c.y + 7);
+    this.guild.anchor.set(0.5, 1);
+    this.guild.zIndex = guildDepth;
+    this.addSprite(this.lights, this.texture("guild_glow"), c.x, c.y + 7).anchor.set(0.5, 1);
 
     this.selection?.destroy();
     this.selection = undefined;
@@ -305,6 +332,25 @@ export class MapView {
     this.refreshFog();
   }
 
+  /** La luce del momento: un colore che moltiplica la mappa e quanto sono accese le luci. */
+  setDaylight(tint: number, glow: number): void {
+    if (tint === this.daylightTint && glow === this.lights.alpha) return;
+    this.daylightTint = tint;
+    this.scene.tint = tint;
+    this.lights.alpha = glow;
+    if (this.ambience) this.ambience.birdsAllowed = glow < 0.5;
+    this.requestRender();
+  }
+
+  /** Uccelli e ombre di nuvole: si possono spegnere (e lo sono se il sistema chiede meno movimento). */
+  setAmbienceEnabled(enabled: boolean): void {
+    this.ambienceEnabled = enabled;
+    this.ambientGround.visible = enabled;
+    this.sky.visible = enabled;
+    if (!enabled) this.ambience?.clear();
+    this.requestRender();
+  }
+
   setGridEnabled(enabled: boolean): void {
     this.gridLayer.visible = enabled;
     this.requestRender();
@@ -325,17 +371,12 @@ export class MapView {
       const wasCovered = this.covered[i] === 1;
       this.covered[i] = covered ? 1 : 0;
 
-      const tint = state === FOG_EXPLORED ? EXPLORED_TINT : 0xffffff;
-      hs.ground.tint = tint;
-      for (const edge of hs.edges) edge.tint = tint;
-      if (hs.relief) {
-        hs.relief.tint = tint;
-        hs.relief.visible = !covered;
-      }
+      const mist = state === FOG_EXPLORED;
+      if (hs.relief) hs.relief.visible = !covered;
 
       if (covered) {
         this.reveals.delete(i);
-        this.resetCloud(hs, true);
+        this.resetCloud(hs, "covered");
       } else if (wasCovered && origin) {
         const c = { x: hs.cloudX, y: hs.cloudY };
         let dx = c.x - origin.x;
@@ -348,9 +389,11 @@ export class MapView {
           dx /= len;
           dy /= len;
         }
-        this.reveals.set(i, { start: now, dx, dy });
-      } else if (!this.reveals.has(i)) {
-        this.resetCloud(hs, false);
+        this.reveals.set(i, { start: now, dx, dy, mist: mist ? MIST_ALPHA : 0 });
+      } else {
+        const reveal = this.reveals.get(i);
+        if (reveal) reveal.mist = mist ? MIST_ALPHA : 0;
+        else this.resetCloud(hs, mist ? "mist" : "clear");
       }
     });
     if (this.guild) {
@@ -411,10 +454,11 @@ export class MapView {
     return sprite;
   }
 
-  private resetCloud(hs: HexSprites, visible: boolean): void {
-    hs.cloudBase.visible = visible;
-    hs.cloudBase.alpha = 1;
-    hs.cloud.visible = visible;
+  /** Coperta dalle nuvole, velata di foschia o libera. */
+  private resetCloud(hs: HexSprites, state: CloudState): void {
+    hs.cloudBase.visible = state !== "clear";
+    hs.cloudBase.alpha = state === "mist" ? MIST_ALPHA : 1;
+    hs.cloud.visible = state === "covered";
     hs.cloud.alpha = 1;
     hs.cloud.position.set(hs.cloudX, hs.cloudY);
   }
@@ -441,12 +485,25 @@ export class MapView {
     }
     const moving = this.updateCharacters();
     if (moving) this.dirty = true;
+    const ambient = this.ambienceEnabled && this.ambience !== undefined && this.map !== undefined;
+    if (ambient && this.ambience!.step(now, this.viewRect())) this.dirty = true;
     if (this.dirty) {
       this.dirty = false;
       this.app.render();
     }
-    if (this.reveals.size > 0 || moving) this.queueFrame();
+    if (this.reveals.size > 0 || moving || ambient) this.queueFrame();
   };
+
+  /** La parte di mondo sullo schermo, in pixel del mondo. */
+  private viewRect(): { left: number; top: number; right: number; bottom: number } {
+    const scale = this.zoom / this.dpr;
+    return {
+      left: -this.camX / scale,
+      top: -this.camY / scale,
+      right: (this.host.clientWidth - this.camX) / scale,
+      bottom: (this.host.clientHeight - this.camY) / scale,
+    };
+  }
 
   /**
    * Mette ogni personaggio dove si trova ora: a metà di un passo, tra le due caselle, con un
@@ -516,9 +573,9 @@ export class MapView {
         Math.round(hs.cloudY + reveal.dy * REVEAL_DRIFT * ease),
       );
       hs.cloud.alpha = t < 0.35 ? 1 : 1 - (t - 0.35) / 0.65;
-      hs.cloudBase.alpha = Math.max(0, 1 - t * 2.5);
+      hs.cloudBase.alpha = Math.max(reveal.mist, 1 - t * 2.5);
       if (t >= 1) {
-        this.resetCloud(hs, false);
+        this.resetCloud(hs, reveal.mist > 0 ? "mist" : "clear");
         this.reveals.delete(i);
       }
     }

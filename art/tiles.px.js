@@ -25,6 +25,8 @@ pal({
   i: "#ecdcb8", I: "#c9b48e", R: "#c0473a", T: "#8a2f33", t: "#e2735a", // sede: intonaco, tetto
   P: "#d0703e", Q: "#94462a",                                           // terracotta
   H: "#e6b892", V: "#b88466",                                           // pelle dei Lumacai
+  F: "#0c142c5c",                                                       // ombra (trasparente)
+  D: "#ffb44a40",                                                       // alone di luce (trasparente)
 })
 
 const S = 32, TOP = 16
@@ -228,6 +230,24 @@ for (let v = 0; v < 3; v++) {
 
 // ---------------------------------------------------------------- rilievo
 
+// Ombre portate: ellissi semitrasparenti verso il basso a destra, perché la luce viene da in alto
+// a sinistra. Si disegnano tutte prima delle cose, così un'ombra non copre un albero vicino.
+const shadowPart = (name, w, h) => sprite(name, { w, h, pivot: "center" }, (c) => c.ellipse((w - 1) / 2, (h - 1) / 2, (w - 1) / 2, (h - 1) / 2, "F"))
+shadowPart("_shadow_xs", 7, 3)
+shadowPart("_shadow_s", 12, 4)
+shadowPart("_shadow_m", 16, 5)
+shadowPart("_shadow_l", 22, 6)
+const SHADOW = {
+  _tree: ["_shadow_s", 3], _tree_b: ["_shadow_s", 3], _pine: ["_shadow_s", 3], _rock: ["_shadow_xs", 2],
+  _hill: ["_shadow_m", 4], _hill_s: ["_shadow_s", 3],
+  _peak: ["_shadow_l", 6], _peak_m: ["_shadow_m", 5], _peak_s: ["_shadow_m", 3],
+}
+/** Le ombre di tutte le cose, poi le cose: [nome, x, y] con il perno in basso al centro. */
+const withShadows = (things) => [
+  ...things.map(([name, x, y]) => stamp(SHADOW[name][0], x + SHADOW[name][1], y - 1)),
+  ...things.map(([name, x, y]) => stamp(name, x, y)),
+]
+
 // Alberi dal fondo verso il davanti, così quelli vicini coprono quelli lontani.
 const FOREST = [
   [[9, 28], [22, 27], [15, 35], [5, 40], [26, 39]],
@@ -249,12 +269,12 @@ const TUNDRA = [
 ]
 for (let v = 0; v < 3; v++) {
   sprite(`forest_top_${v}`, { w: S, h: S + TOP },
-    ...FOREST[v].map(([x, y], i) => stamp((i + v) % 3 === 1 ? "_tree_b" : "_tree", x, y)))
-  sprite(`mountains_top_${v}`, { w: S, h: S + TOP }, ...MOUNTAINS[v].map(([name, x, y]) => stamp(name, x, y)))
+    ...withShadows(FOREST[v].map(([x, y], i) => [(i + v) % 3 === 1 ? "_tree_b" : "_tree", x, y])))
+  sprite(`mountains_top_${v}`, { w: S, h: S + TOP }, ...withShadows(MOUNTAINS[v]))
 }
 for (let v = 0; v < 2; v++) {
-  sprite(`hills_top_${v}`, { w: S, h: S + TOP }, ...HILLS[v].map(([name, x, y]) => stamp(name, x, y)))
-  sprite(`tundra_top_${v}`, { w: S, h: S + TOP }, ...TUNDRA[v].map(([name, x, y]) => stamp(name, x, y)))
+  sprite(`hills_top_${v}`, { w: S, h: S + TOP }, ...withShadows(HILLS[v]))
+  sprite(`tundra_top_${v}`, { w: S, h: S + TOP }, ...withShadows(TUNDRA[v]))
 }
 
 // ---------------------------------------------------------------- transizioni
@@ -360,6 +380,45 @@ sprite("guild", { w: 22, h: 22, outline: "k", pivot: "bottom" },
   hline(0, 9, 22, "O"),
   vline(1, 11, 4, "O"), rect(0, 14, 3, 3, "y"), px(1, 15, "z"))            // insegna
 
+// Di notte le finestre della sede si accendono: stessa tela della casa, solo le luci e un alone.
+sprite("guild_glow", { w: 24, h: 24, pivot: "bottom" }, (c) => {
+  const windows = [[7, 11], [12, 11], [17, 11]]
+  for (const [wx, wy] of windows) c.circ(wx + 1, wy + 1, 3, "D")
+  c.circ(12, 19, 3, "D")
+  for (const [wx, wy] of windows) c.rect(wx, wy, 2, 2, "Y")
+  c.rect(12, 17, 1, 4, "y")
+})
+sprite("guild_shadow", { w: 26, h: 6, pivot: "center" }, (c) => c.ellipse(12.5, 2.5, 12.5, 2.5, "F"))
+
+// ---------------------------------------------------------------- ambiente
+
+// Uccelli in volo, due pose d'ala, e la loro ombra lontana sul terreno.
+sprite("bird_0", `
+  nn.....nn
+  ..n...n..
+  ...nnn...`)
+sprite("bird_1", `
+  .........
+  ..nn.nn..
+  nn..n..nn`)
+sprite("bird_shadow", { w: 7, h: 2 }, (c) => c.ellipse(3, 0.5, 3, 0.5, "F"))
+
+// Ombre di nuvole che scorrono sulla terra: macchie larghe, con il bordo a scacchiera.
+function cloudShadow(name, lobes) {
+  sprite(name, { w: 72, h: 36 }, (c) => {
+    for (let y = 0; y < 36; y++) for (let x = 0; x < 72; x++) {
+      let v = 0
+      for (const [cx, cy, rx, ry] of lobes) {
+        const nx = (x + 0.5 - cx) / rx, ny = (y + 0.5 - cy) / ry
+        v = Math.max(v, 1 - (nx * nx + ny * ny))
+      }
+      if (v > 0.25 || (v > 0 && bayer(x, y) < v * 2)) c.px(x, y, "F")
+    }
+  })
+}
+cloudShadow("cloud_shadow_0", [[18, 20, 16, 11], [38, 15, 20, 13], [56, 21, 14, 10]])
+cloudShadow("cloud_shadow_1", [[16, 16, 14, 10], [33, 21, 18, 12], [52, 16, 17, 11]])
+
 // ---------------------------------------------------------------- personaggi
 
 // Segnalini da mappa, di fronte, lumeggiati da sinistra; il contorno scuro li stacca dal terreno.
@@ -458,5 +517,5 @@ sprite("route_flag", { outline: "k", pivot: "bottom" }, `
 sheet("tiles", [
   "deep_water_*", "shallow_water_*", "plains_*", "forest_*", "hills_*", "mountains_*",
   "swamp_*", "desert_*", "tundra_*", "edge_*", "shore_*", "grid", "select",
-  "cloud_*", "guild", "char_*", "route_*",
+  "cloud_*", "guild*", "char_*", "route_*", "bird*",
 ], { pad: 1 })

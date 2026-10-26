@@ -10,6 +10,7 @@ import {
   createWorld,
   estimateArrival,
   setSpeed,
+  skipAhead,
   syncTo,
 } from "../src/sim/engine";
 import { findRoute } from "../src/sim/route";
@@ -151,6 +152,15 @@ describe("tempo", () => {
     for (let t = START_TIME; t <= end; t += 77_777) advance(steps, t);
     advance(steps, end);
     expect(serializeWorld(steps)).toBe(serializeWorld(once));
+  });
+
+  it("salta avanti eseguendo quello che succede nel frattempo", () => {
+    const world = worldFrom(["........"], offsetToHex(0, 0));
+    world.state.fog.state.fill(1);
+    applyCommand(world, { kind: "move", characterId: 1, target: offsetToHex(5, 0) });
+    const notices = skipAhead(world, 6 * 60 * 60 * 1000, 0);
+    expect(notices.some((n) => n.kind === "arrived")).toBe(true);
+    expect(world.state.time).toBe(START_TIME + 6 * 60 * 60 * 1000);
   });
 
   it("segue l'orologio reale e la velocità", () => {
