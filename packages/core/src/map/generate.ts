@@ -4,6 +4,9 @@ import { offsetToHex, type Hex } from "../hex";
 import { createRng, hashSeed, pick, type Rng } from "../rng";
 import type { WorldMap } from "./world";
 
+/** Da cambiare quando cambia la generazione: lo stesso seed darebbe un'altra mappa. */
+export const MAP_GENERATOR_VERSION = 1;
+
 export interface MapOptions {
   readonly seed: string;
   readonly width: number;

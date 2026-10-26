@@ -3,6 +3,7 @@ import { IntlMessageFormat } from "intl-messageformat";
 import en from "../locales/en.json";
 import it_ from "../locales/it.json";
 import { BIOME_IDS } from "../src/content/biomes";
+import { ETHNICITY_IDS, JOB_IDS, STAT_IDS } from "../src/content/ethnicities";
 import { createTranslator, detectLocale } from "../src/i18n";
 
 const locales: Record<string, Record<string, string>> = { it: it_, en };
@@ -27,11 +28,17 @@ describe("i18n", () => {
     for (const id of BIOME_IDS) expect(it_).toHaveProperty(`biome.${id}`);
   });
 
-  it("gestisce i plurali", () => {
+  it("accorda il genere e segnala le chiavi mancanti", () => {
     const t = createTranslator("it", it_);
-    expect(t("map.size", { width: 1, height: 1, count: 1 })).toBe("1 × 1 · 1 esagono");
-    expect(t("map.size", { width: 2, height: 2, count: 4 })).toBe("2 × 2 · 4 esagoni");
+    expect(t("notice.arrived", { name: "Glossa", gender: "f" })).toBe("Glossa è arrivata a destinazione.");
+    expect(t("notice.arrived", { name: "Folio", gender: "m" })).toBe("Folio è arrivato a destinazione.");
     expect(t("missing.key")).toBe("[missing.key]");
+  });
+
+  it("ha un nome per ogni etnia, mestiere e statistica", () => {
+    for (const id of ETHNICITY_IDS) expect(it_).toHaveProperty(`ethnicity.${id}`);
+    for (const id of JOB_IDS) expect(it_).toHaveProperty(`job.${id}`);
+    for (const id of STAT_IDS) expect(it_).toHaveProperty(`stat.${id}`);
   });
 
   it("riconosce la lingua del browser", () => {

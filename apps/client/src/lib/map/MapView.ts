@@ -2,18 +2,22 @@ import { Application, Assets, Container, Sprite, TextureSource, type Spritesheet
 import {
   FOG_EXPLORED,
   FOG_UNEXPLORED,
+  gameTimeAt,
   hexAt,
+  hexEquals,
+  hexKey,
   hexToOffset,
   tileIndex,
   type Fog,
   type Hex,
+  type World,
   type WorldMap,
 } from "@exp/core";
 import { COL_STEP, HEX_TOP, ROW_STEP, TILE_H, TILE_W, hexAtPoint, hexCenter, tileOrigin } from "./layout";
 import { RELIEF, biomeIdOf, edgeOverlays } from "./transitions";
 
 /** Tinta delle caselle esplorate ma fuori vista. */
-const EXPLORED_TINT = 0x9a9ab4;
+const EXPLORED_TINT = 0xb8b8cc;
 /** Spostamento oltre il quale un tocco diventa un trascinamento, in pixel CSS. */
 const TAP_SLOP = 8;
 /** Quanto durano e quanto si allontanano le nuvole che si aprono. */
@@ -24,6 +28,12 @@ const WOBBLE_PX = 1.2;
 const WOBBLE_CHECK_MS = 150;
 /** Margine attorno a una casella per decidere se è sullo schermo: le nuvole sbordano. */
 const CULL_MARGIN = 8;
+/** I piedi di un personaggio rispetto al centro della casella; sulla sede, davanti alla casa. */
+const FEET_DY = 5;
+const FEET_DY_GUILD = 13;
+/** Distanza tra personaggi fermi sulla stessa casella, e saltello di chi cammina. */
+const CROWD_DX = 10;
+const HOP_MS = 160;
 
 export interface MapViewOptions {
   /** Chiamata quando il giocatore tocca un esagono (non quando trascina). */
@@ -57,13 +67,19 @@ interface Reveal {
   dy: number;
 }
 
+interface CharacterSprites {
+  token: Sprite;
+  shadow: Sprite;
+}
+
 /**
  * Disegna la mappa con Pixi e gestisce la visuale: trascinamento, zoom con rotella e pizzico,
  * tocco. Lo zoom è sempre un numero intero di pixel del dispositivo per pixel dell'arte, così la
  * pixel art resta nitida. Si ridisegna solo quando qualcosa cambia o si muove.
  *
- * Strati, dal basso: terreno, transizioni tra biomi, griglia, rilievo e sede (in ordine di riga),
- * velo delle nuvole, batuffoli, selezione.
+ * Strati, dal basso: terreno, transizioni tra biomi, griglia, rilievo, sede e personaggi (in
+ * ordine di profondità), velo delle nuvole, batuffoli, percorso (visibile anche sulle nuvole),
+ * selezione.
  */
 export class MapView {
   private app = new Application();
@@ -72,6 +88,7 @@ export class MapView {
   private edgeLayer = new Container();
   private gridLayer = new Container({ alpha: 0.14 });
   private objectLayer = new Container({ sortableChildren: true });
+  private routeLayer = new Container();
   private cloudBaseLayer = new Container();
   private cloudLayer = new Container({ sortableChildren: true });
   private overlay = new Container();
@@ -85,6 +102,10 @@ export class MapView {
   private guild: Sprite | undefined;
   private map: WorldMap | undefined;
   private fog: Fog | undefined;
+  private game: World | undefined;
+  private characters = new Map<number, CharacterSprites>();
+  private ring: Sprite | undefined;
+  private selectedCharacter: number | undefined;
   private fogEnabled = true;
 
   /** Zoom in pixel del dispositivo per pixel dell'arte. */
@@ -138,6 +159,7 @@ export class MapView {
       this.objectLayer,
       this.cloudBaseLayer,
       this.cloudLayer,
+      this.routeLayer,
       this.overlay,
     );
     this.app.stage.addChild(this.world);
@@ -173,10 +195,13 @@ export class MapView {
   setMap(map: WorldMap, fog: Fog): void {
     this.map = map;
     this.fog = fog;
-    for (const layer of [this.groundLayer, this.edgeLayer, this.gridLayer, this.objectLayer, this.cloudBaseLayer, this.cloudLayer]) {
+    for (const layer of [this.groundLayer, this.edgeLayer, this.gridLayer, this.objectLayer, this.routeLayer, this.cloudBaseLayer, this.cloudLayer]) {
       layer.removeChildren().forEach((child) => child.destroy());
     }
     this.hexes = [];
+    this.characters.clear();
+    this.ring = undefined;
+    this.guild = undefined;
     this.reveals.clear();
     this.covered = new Uint8Array(map.width * map.height);
     const gridTexture = this.texture("grid");
@@ -211,7 +236,6 @@ export class MapView {
       this.hexes.push({ x, y, ground, edges, relief, grid, cloudBase, cloud, cloudX, cloudY, phase: (variant / 256) * Math.PI * 2 });
     }
 
-    this.guild?.destroy();
     this.guild = this.addSprite(this.objectLayer, this.texture("guild"), 0, 0);
     this.guild.anchor.set(0.5, 1);
     const c = hexCenter(map.start);
@@ -223,6 +247,57 @@ export class MapView {
     this.refreshFog();
     this.centerOn(map.start);
     this.scheduleWobble();
+  }
+
+  /** I personaggi da mostrare: la vista legge le loro posizioni dalla simulazione a ogni frame. */
+  setWorld(world: World): void {
+    this.game = world;
+    for (const { token, shadow } of this.characters.values()) {
+      token.destroy();
+      shadow.destroy();
+    }
+    this.characters.clear();
+    for (const c of world.state.characters) {
+      const shadow = this.addSprite(this.objectLayer, this.texture("char_shadow"), 0, 0);
+      shadow.anchor.set(0.5);
+      shadow.alpha = 0.3;
+      const token = this.addSprite(this.objectLayer, this.texture(`char_${c.ethnicity}`), 0, 0);
+      token.anchor.set(0.5, 1);
+      this.characters.set(c.id, { token, shadow });
+    }
+    this.ring ??= this.addSprite(this.objectLayer, this.texture("char_ring"), 0, 0);
+    this.ring.anchor.set(0.5);
+    this.refreshCharacters();
+  }
+
+  setSelectedCharacter(id: number | undefined): void {
+    this.selectedCharacter = id;
+    this.refreshCharacters();
+  }
+
+  /** Da chiamare quando i personaggi cambiano (un ordine, un arrivo). */
+  refreshCharacters(): void {
+    this.updateCharacters();
+    this.requestRender();
+  }
+
+  /**
+   * Il percorso da mostrare: un puntino per casella e la bandierina sulla destinazione.
+   * `preview`: un percorso ancora da confermare, più trasparente.
+   */
+  setRoute(route: readonly Hex[], destination: Hex | undefined, preview: boolean): void {
+    this.routeLayer.removeChildren().forEach((child) => child.destroy());
+    this.routeLayer.alpha = preview ? 0.65 : 1;
+    for (const h of route) {
+      if (destination && hexEquals(h, destination)) continue;
+      const c = hexCenter(h);
+      this.addSprite(this.routeLayer, this.texture("route_dot"), c.x, c.y).anchor.set(0.5);
+    }
+    if (destination) {
+      const c = hexCenter(destination);
+      this.addSprite(this.routeLayer, this.texture("route_flag"), c.x + 2, c.y + 4).anchor.set(0.5, 1);
+    }
+    this.requestRender();
   }
 
   setFogEnabled(enabled: boolean): void {
@@ -364,12 +439,70 @@ export class MapView {
       this.stepReveals(now);
       this.dirty = true;
     }
+    const moving = this.updateCharacters();
+    if (moving) this.dirty = true;
     if (this.dirty) {
       this.dirty = false;
       this.app.render();
     }
-    if (this.reveals.size > 0) this.queueFrame();
+    if (this.reveals.size > 0 || moving) this.queueFrame();
   };
+
+  /**
+   * Mette ogni personaggio dove si trova ora: a metà di un passo, tra le due caselle, con un
+   * piccolo saltello. Restituisce true se qualcuno sta camminando.
+   */
+  private updateCharacters(): boolean {
+    const world = this.game;
+    if (!world) return false;
+    const gameNow = gameTimeAt(world.state.clock, Date.now());
+    const hop = Math.floor(performance.now() / HOP_MS) % 2;
+    const guildKey = hexKey(world.state.guild.hex);
+    // Chi è fermo sulla stessa casella si mette in fila, uno accanto all'altro.
+    const crowds = new Map<string, number[]>();
+    for (const c of world.state.characters) {
+      if (c.step) continue;
+      const key = hexKey(c.hex);
+      crowds.set(key, [...(crowds.get(key) ?? []), c.id]);
+    }
+    let moving = false;
+    for (const c of world.state.characters) {
+      const sprites = this.characters.get(c.id);
+      if (!sprites) continue;
+      let x: number;
+      let y: number;
+      let lift = 0;
+      if (c.step) {
+        const a = hexCenter(c.step.from);
+        const b = hexCenter(c.step.to);
+        const span = Math.max(1, c.step.arriveAt - c.step.departAt);
+        const t = Math.min(1, Math.max(0, (gameNow - c.step.departAt) / span));
+        x = a.x + (b.x - a.x) * t;
+        y = a.y + (b.y - a.y) * t + FEET_DY;
+        lift = hop;
+        moving = true;
+      } else {
+        const key = hexKey(c.hex);
+        const crowd = crowds.get(key) ?? [c.id];
+        const center = hexCenter(c.hex);
+        x = center.x + (crowd.indexOf(c.id) - (crowd.length - 1) / 2) * CROWD_DX;
+        y = center.y + (key === guildKey ? FEET_DY_GUILD : FEET_DY);
+      }
+      x = Math.round(x);
+      y = Math.round(y);
+      const depth = ((y - HEX_TOP - 16) / ROW_STEP) * 2 + 1.5;
+      sprites.shadow.position.set(x, y);
+      sprites.shadow.zIndex = depth;
+      sprites.token.position.set(x, y + 1 - lift);
+      sprites.token.zIndex = depth + 0.02;
+      if (this.ring && c.id === this.selectedCharacter) {
+        this.ring.position.set(x, y);
+        this.ring.zIndex = depth + 0.01;
+      }
+    }
+    if (this.ring) this.ring.visible = this.selectedCharacter !== undefined && this.characters.has(this.selectedCharacter);
+    return moving;
+  }
 
   /** Le nuvole scoperte scivolano via dal punto di scoperta e svaniscono. */
   private stepReveals(now: number): void {

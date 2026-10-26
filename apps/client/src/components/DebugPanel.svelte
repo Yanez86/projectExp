@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { MAP_SIZES, game, randomSeed, type MapSize } from "../lib/game.svelte";
+  import { MAP_SIZES, SPEEDS, game, randomSeed, type MapSize } from "../lib/game.svelte";
   import { i18n } from "../lib/i18n.svelte";
 
   const sizes = Object.keys(MAP_SIZES) as MapSize[];
@@ -9,10 +9,18 @@
   class="panel"
   onsubmit={(e) => {
     e.preventDefault();
-    game.generate();
+    game.newGame();
   }}
 >
   <h2>{i18n.t("debug.title")}</h2>
+  <label class="row">
+    <span>{i18n.t("debug.speed")}</span>
+    <select value={game.speed} onchange={(e) => game.changeSpeed(Number(e.currentTarget.value))}>
+      {#each SPEEDS as speed (speed)}
+        <option value={speed}>{i18n.t("speed", { speed })}</option>
+      {/each}
+    </select>
+  </label>
   <label class="row">
     <span>{i18n.t("debug.seed")}</span>
     <input bind:value={game.seed} autocomplete="off" spellcheck="false" />
@@ -30,10 +38,10 @@
       type="button"
       onclick={() => {
         game.seed = randomSeed();
-        game.generate();
+        game.newGame();
       }}>{i18n.t("debug.random")}</button
     >
-    <button type="submit" class="primary">{i18n.t("debug.generate")}</button>
+    <button type="submit" class="primary">{i18n.t("debug.newGame")}</button>
   </div>
   <label class="check">
     <input type="checkbox" bind:checked={game.fogEnabled} />
@@ -43,13 +51,6 @@
     <input type="checkbox" bind:checked={game.gridEnabled} />
     {i18n.t("debug.grid")}
   </label>
-  <label class="check">
-    <input type="checkbox" bind:checked={game.exploreOnTap} disabled={!game.fogEnabled} />
-    {i18n.t("debug.exploreOnTap")}
-  </label>
-  <button type="button" onclick={() => game.resetFog()} disabled={!game.fogEnabled}>
-    {i18n.t("debug.resetFog")}
-  </button>
 </form>
 
 <style>
@@ -112,11 +113,5 @@
   input[type="checkbox"] {
     width: 18px;
     height: 18px;
-  }
-
-  button:disabled,
-  input:disabled {
-    opacity: 0.5;
-    cursor: default;
   }
 </style>

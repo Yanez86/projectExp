@@ -23,6 +23,8 @@ pal({
   x: "#e6eefa", j: "#b8c8e6", J: "#8b9fcc",                             // nuvole
   Y: "#ffe680", Z: "#fff6c8",                                           // selezione
   i: "#ecdcb8", I: "#c9b48e", R: "#c0473a", T: "#8a2f33", t: "#e2735a", // sede: intonaco, tetto
+  P: "#d0703e", Q: "#94462a",                                           // terracotta
+  H: "#e6b892", V: "#b88466",                                           // pelle dei Lumacai
 })
 
 const S = 32, TOP = 16
@@ -358,10 +360,103 @@ sprite("guild", { w: 22, h: 22, outline: "k", pivot: "bottom" },
   hline(0, 9, 22, "O"),
   vline(1, 11, 4, "O"), rect(0, 14, 3, 3, "y"), px(1, 15, "z"))            // insegna
 
+// ---------------------------------------------------------------- personaggi
+
+// Segnalini da mappa, di fronte, lumeggiati da sinistra; il contorno scuro li stacca dal terreno.
+
+// Cartiglio: carta piegata, la testa a cappello di origami, una linea di mappa sul petto.
+sprite("char_paperfolk", { outline: "k", pivot: "bottom" }, `
+  ......p......
+  .....ppi.....
+  ....pppii....
+  ...ppppiii...
+  ..pppppiiii..
+  ..IIIIIIIII..
+  ..ppkpppkii..
+  ..pppppiiii..
+  ...ppppiii...
+  ....ppNii....
+  ...pppNiii...
+  ..ppNNpNNii..
+  .pppNppiNiii.
+  ...ppppiii...
+  ...pp...ii...
+  ...pp...ii...`)
+
+// Lumacaio: corpo morbido, antenne con gli occhi, il guscio-bottega sulla schiena.
+sprite("char_shellfolk", { outline: "k", pivot: "bottom" }, `
+  .k...k.......
+  .H...H.......
+  ..H.H...eee..
+  ..HHHH.eEEEe.
+  .HHHHHHeEyyEd
+  .HkHHkHEyEEyd
+  .HHVVHHEyEyEd
+  ..HHHHHEEyyEd
+  .HHHHHHdEEEdd
+  .HHVHHHHdddd.
+  ..HHHHHHH....
+  .HHHHHHHHV...
+  HHHHHHHVVVV..`)
+
+// Cocciaio: una giara robusta con le crepe riparate d'oro.
+sprite("char_sherdkin", { outline: "k", pivot: "bottom" }, `
+  ...QPPPPQ...
+  ....PPPP....
+  ...PPPPPQ...
+  ...PkPPkQ...
+  ...PPPPPQ...
+  ....PyPQ....
+  ..PPPyPPPQ..
+  .PPPPPyPPQQ.
+  .PPyPPPPPQQ.
+  .PPPyyPPPQQ.
+  ..PPPPyPQQ..
+  ..PPP..PQQ..
+  ..PP....QQ..`)
+
+// Micelide: cappello di fungo a pois, gambo chiaro, occhi sotto la falda.
+sprite("char_mycelings", { outline: "k", pivot: "bottom" }, `
+  ....rrrrr....
+  ..rrprrrrrr..
+  .rrrrrrprrrR.
+  rrprrrrrrrpRR
+  rrrrrrrrrRRRR
+  .TTTTTTTTTTT.
+  ...ppppppI...
+  ...pkppkpI...
+  ...ppppppI...
+  ....pppiI....
+  ....pppiI....
+  ....pp.iI....`)
+
+sprite("char_shadow", { w: 12, h: 4 }, (c) => c.ellipse(6, 2, 5, 1, "k"))
+sprite("char_ring", { w: 16, h: 7 }, (c) => {
+  for (let y = 0; y < 7; y++) for (let x = 0; x < 16; x++) {
+    const nx = (x + 0.5 - 8) / 8, ny = (y + 0.5 - 3.5) / 3.5
+    const d = nx * nx + ny * ny
+    if (d <= 1 && d > 0.45) c.px(x, y, y < 3 ? "Z" : "Y")
+  }
+})
+
+// Il percorso: un puntino per casella e una bandierina sulla destinazione.
+sprite("route_dot", `
+  .Z.
+  ZYZ
+  .Z.`)
+sprite("route_flag", { outline: "k", pivot: "bottom" }, `
+  oYYYy.
+  oYYYYy
+  oYYy..
+  o.....
+  o.....
+  o.....
+  O.....`)
+
 // ---------------------------------------------------------------- foglio
 
 sheet("tiles", [
   "deep_water_*", "shallow_water_*", "plains_*", "forest_*", "hills_*", "mountains_*",
   "swamp_*", "desert_*", "tundra_*", "edge_*", "shore_*", "grid", "select",
-  "cloud_*", "guild",
+  "cloud_*", "guild", "char_*", "route_*",
 ], { pad: 1 })

@@ -1,21 +1,20 @@
 <script lang="ts">
-  import { LOCALES, isLocale } from "@exp/core";
+  import { LOCALES, gameTimeAt, isLocale } from "@exp/core";
+  import { formatClock } from "../lib/format";
   import { game } from "../lib/game.svelte";
   import { i18n } from "../lib/i18n.svelte";
 
   let { showDebug = $bindable(false) }: { showDebug?: boolean } = $props();
+
+  let gameNow = $derived(game.world ? gameTimeAt(game.world.state.clock, game.now) : undefined);
 </script>
 
 <header class="bar">
   <div class="title">
     <h1>{i18n.t("app.title")}</h1>
-    {#if game.map}
-      <span class="size">
-        {i18n.t("map.size", {
-          width: game.map.width,
-          height: game.map.height,
-          count: game.map.width * game.map.height,
-        })}
+    {#if gameNow !== undefined}
+      <span class="clock">
+        {formatClock(i18n.t, gameNow)} · {i18n.t("speed", { speed: game.speed })}
       </span>
     {/if}
   </div>
@@ -72,9 +71,10 @@
     letter-spacing: 0.02em;
   }
 
-  .size {
+  .clock {
     color: var(--muted);
     font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
   }
 
   .actions {

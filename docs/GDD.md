@@ -47,6 +47,13 @@ linee di produzione e vende alle città sparse sulla mappa.
   restano scoperte, un po' più scure.
 - [Deciso] Il giocatore può costruire avamposti sulla mappa per raccogliere materie prime, che
   vengono mandate alla gilda.
+- [Proposta] Movimento: in pianura una casella costa 10 minuti di gioco a Passo 5; gli altri
+  biomi costano di più (deserto ×1,3, foresta ×1,5, tundra ×1,6, colline ×1,7, palude ×2,
+  montagne ×2,6); l'acqua non si attraversa a piedi. Un bioma congeniale all'etnia costa
+  ×0,75, uno ostile ×1,4. Il Passo accorcia o allunga ogni passo.
+- [Proposta] Vista: la sede vede a 3 caselle, un personaggio a 2; +1 su colline e montagne,
+  +1 con Occhio 7 o più.
+- [Proposta] La gilda parte con due esploratori: un Cartiglio e uno di un'altra etnia.
 - [Aperto] Quali luoghi di interesse esistono e cosa offrono.
 
 ## 6. Personaggi, etnie e background
@@ -162,7 +169,7 @@ Vedi [TECH.md](TECH.md).
 ## 14. Prime tappe [Proposta]
 
 1. Mappa: generazione a esagoni, biomi, nuvole sull'inesplorato, navigazione con mouse e touch.
-2. Sede della gilda, motore a eventi, primi esploratori sulla mappa.
+2. Sede della gilda, motore a eventi, primi esploratori sulla mappa. (fatta)
 3. Avamposti e materie prime; prime linee di produzione.
 4. Città, mercato e carovane.
 5. Mercenari e dungeon.

@@ -1,6 +1,6 @@
 # Piano tecnico (bozza v0.1)
 
-> Stato: approvato; la prima tappa è fatta. Il design del gioco è in [GDD.md](GDD.md).
+> Stato: approvato; prima e seconda tappa fatte. Il design del gioco è in [GDD.md](GDD.md).
 
 ## 1. Obiettivi
 
@@ -51,9 +51,18 @@ Il server andrà in `apps/server/`.
   o si riempie, un viaggio finisce, una ricerca termina) e salta direttamente lì. Recuperare
   giorni di assenza costa quindi poche operazioni, non un calcolo secondo per secondo.
 - Le gilde IA ragionano a intervalli regolari, anche loro come eventi.
-- Tempo di gioco = tempo reale × velocità del mondo.
-- Gira in un Web Worker, così il recupero offline non blocca l'interfaccia.
-- Lo stato si salva come JSON.
+- Tempo di gioco = tempo reale × velocità del mondo. L'orologio del mondo ricorda un istante in
+  cui tempo reale e di gioco erano allineati e la velocità: cambiare velocità lo riallinea.
+- I personaggi si muovono una casella alla volta: ogni passo è un evento d'arrivo. A ogni arrivo
+  si ricalcolano la vista e il percorso (A*), perché ciò che si scopre può cambiare la strada
+  migliore; sotto le nuvole una casella si presume attraversabile, con una fatica media.
+- Un test controlla che avanzare in un colpo solo o a piccoli passi dia lo stesso mondo: è la
+  garanzia che il recupero offline sia corretto.
+- Per ora la simulazione gira sul thread principale, perché è leggera; passerà in un Web Worker
+  quando il recupero offline diventerà pesante.
+- Lo stato si salva come JSON (la nebbia compressa) in IndexedDB; la mappa non si salva, si
+  rigenera dal seed. Il salvataggio porta la versione del formato e del generatore di mappe:
+  se non coincidono, si comincia una partita nuova.
 
 ## 5. La mappa
 
@@ -108,6 +117,17 @@ Obiettivo: aprire il gioco su telefono e PC e girare per una mappa generata.
 È finita quando, su telefono e PC, si genera una mappa da un seed, ci si muove in modo fluido e
 le nuvole coprono ciò che non è stato esplorato.
 
-## 10. Domande aperte
+## 10. Seconda tappa: la sede e i primi esploratori (fatta)
+
+- `core`: motore a eventi con orologio e velocità, comandi (muovi, fermati), percorsi A* con
+  costi di terreno ed etnia, vista dei personaggi, salvataggi.
+- `art`: i segnalini delle quattro etnie, l'anello di selezione, i puntini del percorso e la
+  bandierina.
+- `client`: il ciclo di gioco (quattro volte al secondo porta il mondo all'ora attuale), i
+  personaggi che camminano tra le caselle, l'anteprima del percorso con il tempo d'arrivo, l'elenco
+  degli esploratori, l'orologio del mondo, gli avvisi, il salvataggio e il recupero del tempo
+  passato a gioco chiuso.
+
+## 11. Domande aperte
 
 1. Su mobile il gioco va solo in orizzontale o anche in verticale?
