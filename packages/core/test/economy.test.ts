@@ -5,7 +5,7 @@ import { distance, hexEquals, hexesInRange, offsetToHex } from "../src/hex";
 import { FOG_VISIBLE, fogAt } from "../src/map/fog";
 import type { Place } from "../src/map/places";
 import { checkOutpostSite, outpostYield, workshopStatus } from "../src/sim/economy";
-import { advance, applyCommand, createWorld } from "../src/sim/engine";
+import { advance, applyCommand, createWorld, nextEventAt } from "../src/sim/engine";
 import { deserializeWorld, serializeWorld } from "../src/sim/save";
 import { START_TIME, type World } from "../src/sim/state";
 import { makeCharacter, worldFrom } from "./helpers";
@@ -174,6 +174,20 @@ describe("laboratori", () => {
     const { stock } = world.state.guild;
     expect(stock.planks).toBeGreaterThan(10);
     expect(stock.charcoal).toBeGreaterThan(10);
+  });
+
+  it("annunciano quando succede la prossima cosa, anche se non porta avvisi", () => {
+    const world = valley();
+    world.state.guild.stock.timber = 4;
+    applyCommand(world, { kind: "build_workshop", recipe: "sawmill" });
+    const ready = START_TIME + WORKSHOP_BUILD_MS;
+    expect(nextEventAt(world)).toBe(ready);
+    expect(run(world, ready + HOUR - 1)).toHaveLength(1);
+    // Il ciclo finisce senza avvisi, ma qualcosa è successo e il prossimo è già in coda.
+    expect(nextEventAt(world)).toBe(ready + HOUR);
+    expect(run(world, ready + HOUR)).toEqual([]);
+    expect(world.state.guild.stock.planks).toBe(1);
+    expect(nextEventAt(world)).toBe(ready + 2 * HOUR);
   });
 
   it("in pausa non cominciano cicli nuovi", () => {

@@ -269,6 +269,11 @@ function arrive(world: World, characterId: number, at: number, notices: Notice[]
   startStep(world, character, at);
 }
 
+/** Quando succede la prossima cosa in coda (tempo di gioco), se c'è. */
+export function nextEventAt(world: World): number | undefined {
+  return world.state.events[0]?.at;
+}
+
 /** Porta la simulazione all'istante reale `realNow`. */
 export function syncTo(world: World, realNow: number): Notice[] {
   return advance(world, gameTimeAt(world.state.clock, realNow));

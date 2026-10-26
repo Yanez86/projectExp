@@ -5,6 +5,7 @@ import {
   gameTimeAt,
   grantGold,
   hexEquals,
+  nextEventAt,
   serializeWorld,
   setSpeed,
   skipAhead,
@@ -121,8 +122,11 @@ class Game {
     this.now = Date.now();
     const world = this.world;
     if (!world) return;
+    // Raccolti e cicli dei laboratori cambiano il mondo senza avvisi: conta che sia successo
+    // qualcosa, non solo che ci sia un avviso, altrimenti magazzino e laboratori restano fermi.
+    const due = nextEventAt(world);
     const notices = syncTo(world, this.now);
-    if (notices.length > 0) this.handle(notices);
+    if (notices.length > 0 || (due !== undefined && due <= world.state.time)) this.handle(notices);
   }
 
   private handle(notices: Notice[]): void {
