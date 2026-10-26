@@ -1,4 +1,4 @@
-# Documento di design (bozza v0.6)
+# Documento di design (bozza v0.7)
 
 > Stato: bozza in discussione. Niente codice finché questo documento non è stabile.
 >
@@ -58,10 +58,10 @@ Il giocatore assolda personaggi già fatti, non li crea. Quattro mestieri:
 
 ### Etnie
 
-- [Deciso] Si parte con tre etnie, fuori dagli schemi classici (niente elfi, nani, orchi).
+- [Deciso] Si parte con quattro etnie, fuori dagli schemi classici (niente elfi, nani, orchi).
 - [Deciso] L'etnia dà a ogni personaggio un'affinità con alcuni biomi (si muove ed esplora meglio
   in certi terreni) e un talento in un mestiere.
-- [Proposta] Le tre etnie:
+- [Deciso] Le quattro etnie:
   - **Cartigli** (EN: Paperfolk). Nati da mappe dimenticate, fatti di carta piegata: ciò che
     esplorano si disegna sulla loro pelle. Talento: esploratori. A loro agio in pianure e
     deserti; temono paludi, pioggia e fuoco.
@@ -71,11 +71,14 @@ Il giocatore assolda personaggi già fatti, non li crea. Quattro mestieri:
   - **Cocciai** (EN: Sherdkin). Persone di terracotta: quando si rompono si riparano con l'oro,
     e ogni cicatrice dorata è una storia e un tratto in più. Talento: mercenari. A loro agio
     su colline e montagne; temono l'acqua e il gelo.
-- [Proposta] Alternative:
-  - **Micelidi** (EN: Mycelings): funghi ambulanti che condividono i ricordi tramite spore, a
-    loro agio nel buio dei dungeon.
-  - **Gente di Sale** (EN: Saltborn): cristalli di sale viventi, mercanti nati nei deserti, che
-    la pioggia scioglie.
+  - **Micelidi** (EN: Mycelings). Funghi ambulanti che condividono i ricordi tramite spore.
+    Talento [Proposta]: costruttori, perché fanno crescere gli avamposti e il loro micelio li
+    collega sotto terra. A loro agio nelle foreste e nel buio dei dungeon; temono deserti e
+    gelo.
+- Con quattro etnie e quattro mestieri, ogni etnia ha il suo mestiere di punta; chiunque può
+  comunque fare qualsiasi mestiere.
+- Idea per il futuro: **Gente di Sale** (EN: Saltborn), cristalli di sale viventi, mercanti nati
+  nei deserti, che la pioggia scioglie.
 
 ### Background e "DNA"
 
@@ -169,5 +172,5 @@ Il giocatore assolda personaggi già fatti, non li crea. Quattro mestieri:
 
 ## 15. Domande aperte
 
-1. **Etnie**: il trio proposto nel §6 va bene, o ne scambiamo qualcuna con le alternative?
+1. **Micelidi**: va bene il talento da costruttori?
 2. **Background**: vanno bene i quattro capitoli e le cinque statistiche?
