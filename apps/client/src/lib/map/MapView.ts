@@ -1,4 +1,4 @@
-import { Application, Assets, Container, Sprite, TextureSource, type Spritesheet, type Texture } from "pixi.js";
+import { Application, Assets, Container, Sprite, Spritesheet, TextureSource, type SpritesheetData, type Texture } from "pixi.js";
 import {
   FOG_EXPLORED,
   FOG_UNEXPLORED,
@@ -148,7 +148,8 @@ export class MapView {
     private readonly options: MapViewOptions,
   ) {}
 
-  async init(sheetUrl: string): Promise<void> {
+  /** Prepara Pixi e la grafica; lancia un errore se il browser non riesce a disegnare. */
+  async init(sheetData: SpritesheetData, sheetImage: string): Promise<void> {
     TextureSource.defaultOptions.scaleMode = "nearest";
     await this.app.init({
       background: "#1a1423",
@@ -181,7 +182,8 @@ export class MapView {
     this.world.addChild(this.scene, this.lights, this.routeLayer, this.overlay);
     this.app.stage.addChild(this.world);
 
-    const sheet = await Assets.load<Spritesheet>(sheetUrl);
+    const sheet = new Spritesheet(await Assets.load<Texture>(sheetImage), sheetData);
+    await sheet.parse();
     for (const [name, texture] of Object.entries(sheet.textures)) {
       this.textures.set(name, texture);
       const match = /^(.*)_(\d+)$/.exec(name);

@@ -61,5 +61,7 @@
   "hint.send": "Tap a hex to send them there.",
   "debug.dayNight": "Day and night",
   "debug.ambience": "Birds and cloud shadows",
-  "debug.skip": "Skip {hours} hours"
+  "debug.skip": "Skip {hours} hours",
+  "error.title": "The game didn't start",
+  "error.reload": "Reload"
 }

@@ -14,7 +14,8 @@ gioco, e aggiornali quando una decisione cambia.
   `Date.now()` né `Math.random()`), senza DOM. La grafica e l'interfaccia stanno in `apps/client`.
 - La grafica si scrive in `art/*.px.js` con la skill pxl (installata da
   `.claude/hooks/install-pxl.sh`); `npm run art` rigenera gli sprite sheet in
-  `apps/client/public/assets/`, che si committano.
+  `apps/client/src/assets/`, che si committano. Il client li importa (mai da `public/`), così il
+  loro nome cambia a ogni versione e la cache del browser non mescola versioni diverse.
 
 ## Comandi
 

@@ -10,7 +10,9 @@
   import { game } from "./lib/game.svelte";
   import { MapView } from "./lib/map/MapView";
   import { daylight } from "./lib/map/daylight";
-  import { SHEET_URL } from "./lib/sheet";
+  import { i18n } from "./lib/i18n.svelte";
+  import { SHEET_DATA, SHEET_IMAGE } from "./lib/sheet";
+  import type { SpritesheetData } from "pixi.js";
 
   /** Ogni quanto il gioco porta il mondo all'ora attuale. */
   const TICK_MS = 250;
@@ -18,15 +20,23 @@
   let host: HTMLDivElement;
   let view = $state<MapView | undefined>();
   let showDebug = $state(false);
+  /** Se il gioco non riesce a partire, il motivo: meglio un messaggio che uno schermo vuoto. */
+  let startError = $state<string | undefined>();
 
   onMount(() => {
     const mapView = new MapView(host, { onTap: (hex) => game.tapHex(hex) });
     let alive = true;
-    void mapView.init(SHEET_URL).then(async () => {
-      if (!alive) return;
-      await game.start();
-      view = mapView;
-    });
+    mapView
+      .init(SHEET_DATA as unknown as SpritesheetData, SHEET_IMAGE)
+      .then(async () => {
+        if (!alive) return;
+        await game.start();
+        view = mapView;
+      })
+      .catch((error: unknown) => {
+        console.error(error);
+        startError = error instanceof Error ? error.message : String(error);
+      });
     const timer = setInterval(() => game.tick(), TICK_MS);
     const onVisibility = () => (document.hidden ? game.saveNow() : game.tick());
     const onPageHide = () => game.saveNow();
@@ -117,6 +127,13 @@
   </div>
 </div>
 <Toasts />
+{#if startError}
+  <div class="error" role="alert">
+    <h2>{i18n.t("error.title")}</h2>
+    <p>{startError}</p>
+    <button type="button" onclick={() => location.reload()}>{i18n.t("error.reload")}</button>
+  </div>
+{/if}
 
 <style>
   .map {
@@ -147,6 +164,40 @@
     justify-content: space-between;
     gap: 8px;
     pointer-events: none;
+  }
+
+  .error {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(360px, calc(100vw - 32px));
+    background: var(--panel);
+    border: 1px solid #ff9a8a;
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+
+  .error h2 {
+    margin: 0 0 6px;
+    font-size: 1rem;
+  }
+
+  .error p {
+    margin: 0 0 10px;
+    color: var(--muted);
+    font-size: 0.85rem;
+    word-break: break-word;
+  }
+
+  .error button {
+    min-height: 40px;
+    padding: 0 14px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    border: none;
+    border-radius: var(--radius);
+    font-weight: 600;
   }
 
   .left {
