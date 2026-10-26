@@ -1,2 +1,8 @@
+node_modules/
+dist/
+art/out/
+*.log
+.DS_Store
+
 # Skill pxl: installata da .claude/hooks/install-pxl.sh
 .claude/skills/pxl-pixel-art/

@@ -1,0 +1,498 @@
+{
+ "frames": {
+  "deep_water_0": {
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 48
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 48
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 48
+   }
+  },
+  "deep_water_1": {
+   "frame": {
+    "x": 33,
+    "y": 0,
+    "w": 32,
+    "h": 48
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 48
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 48
+   }
+  },
+  "shallow_water_0": {
+   "frame": {
+    "x": 66,
+    "y": 0,
+    "w": 32,
+    "h": 48
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 48
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 48
+   }
+  },
+  "shallow_water_1": {
+   "frame": {
+    "x": 99,
+    "y": 0,
+    "w": 32,
+    "h": 48
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 48
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 48
+   }
+  },
+  "plains_0": {
+   "frame": {
+    "x": 132,
+    "y": 0,
+    "w": 32,
+    "h": 48
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 48
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 48
+   }
+  },
+  "plains_1": {
+   "frame": {
+    "x": 0,
+    "y": 49,
+    "w": 32,
+    "h": 48
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 48
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 48
+   }
+  },
+  "plains_2": {
+   "frame": {
+    "x": 33,
+    "y": 49,
+    "w": 32,
+    "h": 48
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 48
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 48
+   }
+  },
+  "forest_0": {
+   "frame": {
+    "x": 66,
+    "y": 49,
+    "w": 32,
+    "h": 48
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 48
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 48
+   }
+  },
+  "forest_1": {
+   "frame": {
+    "x": 99,
+    "y": 49,
+    "w": 32,
+    "h": 48
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 48
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 48
+   }
+  },
+  "forest_2": {
+   "frame": {
+    "x": 132,
+    "y": 49,
+    "w": 32,
+    "h": 48
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 48
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 48
+   }
+  },
+  "hills_0": {
+   "frame": {
+    "x": 0,
+    "y": 98,
+    "w": 32,
+    "h": 48
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 48
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 48
+   }
+  },
+  "hills_1": {
+   "frame": {
+    "x": 33,
+    "y": 98,
+    "w": 32,
+    "h": 48
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 48
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 48
+   }
+  },
+  "mountains_0": {
+   "frame": {
+    "x": 66,
+    "y": 98,
+    "w": 32,
+    "h": 48
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 48
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 48
+   }
+  },
+  "mountains_1": {
+   "frame": {
+    "x": 99,
+    "y": 98,
+    "w": 32,
+    "h": 48
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 48
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 48
+   }
+  },
+  "mountains_2": {
+   "frame": {
+    "x": 132,
+    "y": 98,
+    "w": 32,
+    "h": 48
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 48
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 48
+   }
+  },
+  "swamp_0": {
+   "frame": {
+    "x": 0,
+    "y": 147,
+    "w": 32,
+    "h": 48
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 48
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 48
+   }
+  },
+  "swamp_1": {
+   "frame": {
+    "x": 33,
+    "y": 147,
+    "w": 32,
+    "h": 48
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 48
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 48
+   }
+  },
+  "desert_0": {
+   "frame": {
+    "x": 66,
+    "y": 147,
+    "w": 32,
+    "h": 48
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 48
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 48
+   }
+  },
+  "desert_1": {
+   "frame": {
+    "x": 99,
+    "y": 147,
+    "w": 32,
+    "h": 48
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 48
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 48
+   }
+  },
+  "tundra_0": {
+   "frame": {
+    "x": 132,
+    "y": 147,
+    "w": 32,
+    "h": 48
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 48
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 48
+   }
+  },
+  "tundra_1": {
+   "frame": {
+    "x": 0,
+    "y": 196,
+    "w": 32,
+    "h": 48
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 48
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 48
+   }
+  },
+  "fog": {
+   "frame": {
+    "x": 33,
+    "y": 196,
+    "w": 32,
+    "h": 48
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 48
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 48
+   }
+  },
+  "select": {
+   "frame": {
+    "x": 66,
+    "y": 196,
+    "w": 32,
+    "h": 48
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 48
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 48
+   }
+  },
+  "guild": {
+   "frame": {
+    "x": 99,
+    "y": 196,
+    "w": 24,
+    "h": 24
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 24,
+    "h": 24
+   },
+   "sourceSize": {
+    "w": 24,
+    "h": 24
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 1
+   }
+  }
+ },
+ "meta": {
+  "app": "pxl",
+  "image": "tiles.png",
+  "format": "RGBA8888",
+  "size": {
+   "w": 164,
+   "h": 244
+  },
+  "scale": "1"
+ }
+}

@@ -1,6 +1,6 @@
 # Piano tecnico (bozza v0.1)
 
-> Stato: proposta da approvare prima di scrivere codice. Il design del gioco è in [GDD.md](GDD.md).
+> Stato: approvato; la prima tappa è fatta. Il design del gioco è in [GDD.md](GDD.md).
 
 ## 1. Obiettivi
 
@@ -85,10 +85,12 @@ Il server andrà in `apps/server/`.
 
 - TypeScript in modalità rigorosa, ESLint.
 - Test sulla logica: determinismo, generazione della mappa, flussi delle materie.
-- GitHub Actions a ogni push: controllo dei tipi, test e build. Pubblicazione su GitHub Pages dal
-  branch principale.
+- GitHub Actions a ogni push: controllo dei tipi, lint, test e build.
+- Pubblicazione su GitHub Pages dal branch principale, attiva quando Pages è abilitato sul
+  repository e la variabile `PAGES_ENABLED` vale `true` (su un repository privato Pages richiede
+  un piano GitHub a pagamento).
 
-## 9. Prima tappa: la mappa
+## 9. Prima tappa: la mappa (fatta)
 
 Obiettivo: aprire il gioco su telefono e PC e girare per una mappa generata.
 

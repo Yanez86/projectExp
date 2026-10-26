@@ -1,0 +1,10 @@
+{
+  "extends": ["../../tsconfig.base.json", "@tsconfig/svelte/tsconfig.json"],
+  "compilerOptions": {
+    "moduleResolution": "Bundler",
+    "verbatimModuleSyntax": true,
+    "noEmit": true,
+    "types": ["vite/client"]
+  },
+  "include": ["src/**/*.ts", "src/**/*.svelte", "vite.config.ts"]
+}
