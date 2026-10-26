@@ -58,16 +58,9 @@ function edgeDist(d, x, y) {
   return { dist: Math.abs(ex * py - ey * px) / len, along: (px * ex + py * ey) / (len * len) }
 }
 
-const edgeMin = (x, y) => Math.min(...DIRS.map((_, d) => edgeDist(d, x, y).dist))
-
-// Terreno: un colore di base e macchie morbide di un secondo tono, ad almeno 3 px dal bordo,
-// così due caselle dello stesso bioma si toccano senza cuciture.
-function ground(c, base, patch, seed, scale, threshold) {
-  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
-    if (!inHex(x, y)) continue
-    const blob = patch && edgeMin(x, y) > 3 && vnoise(x / scale + seed * 7.3, y / scale + seed * 3.1) < threshold
-    c.px(x, y, blob ? patch : base)
-  }
+// Terreno: l'esagono pieno di un colore; i dettagli si timbrano sopra.
+function ground(c, base) {
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) if (inHex(x, y)) c.px(x, y, base)
 }
 
 // Punti dentro l'esagono (riquadro 32×32), lontani dal bordo, scelti in modo ripetibile.
@@ -187,22 +180,47 @@ sprite("_rock", { outline: "n", pivot: "bottom" }, `
 
 // ---------------------------------------------------------------- terreno
 
+// Il terreno è un colore pieno con dettagli piccoli e sparsi (ciuffi, segni, sassi, riflessi),
+// mai macchie grandi: ripetute su ogni casella sembrerebbero chiazze.
+sprite("_mark", "GG")
+sprite("_mark_d", "G.\n.G")
+sprite("_glint", "l")
+sprite("_fleck", "g")
+sprite("_speck", "h.\n.h")
+sprite("_dirt", "Ee")
+sprite("_crack", "K.\n.K\n.K")
+sprite("_sparkle", "w")
+sprite("_drift", "vv")
+sprite("_wave_dark", "NN")
+sprite("_ripple_dark", "CC")
+sprite("_mud", "MM")
+
+/** Una parte timbrata in `count` punti scelti a caso (in modo ripetibile) dentro la casella. */
+const scatterParts = (part, seed, count, margin = 2) => spots(seed, count, margin).map(([x, y]) => stamp(part, x, y))
+
 for (let v = 0; v < 2; v++) {
   sprite(`deep_water_${v}`, { w: S, h: S },
-    (c) => ground(c, "B", "N", v + 1, 3.5, 0.2),
+    (c) => ground(c, "B"),
+    ...scatterParts("_wave_dark", 101 + v, 3),
     ...spots(11 + v, 3, 3).map(([x, y]) => stamp("_wave", x - 2, y)))
   sprite(`shallow_water_${v}`, { w: S, h: S },
-    (c) => ground(c, "c", "C", v + 5, 6, 0.33),
+    (c) => ground(c, "c"),
+    ...scatterParts("_ripple_dark", 111 + v, 3),
     ...spots(21 + v, 3, 3).map(([x, y]) => stamp("_ripple", x - 2, y)))
   sprite(`hills_${v}`, { w: S, h: S },
-    (c) => ground(c, "g", "e", v + 17, 5, 0.25),
+    (c) => ground(c, "g"),
+    ...scatterParts("_dirt", 121 + v, 3),
+    ...scatterParts("_mark", 131 + v, 3),
     ...spots(51 + v, 3, 3).map(([x, y]) => stamp("_tuft_dry", x - 2, y)))
   sprite(`swamp_${v}`, { w: S, h: S },
-    (c) => ground(c, "m", "M", v + 25, 5, 0.32),
+    (c) => ground(c, "m"),
+    ...scatterParts("_mud", 141 + v, 4),
     ...spots(71 + v, 3, 4).map(([x, y]) => stamp("_pool", x - 4, y - 1)),
     ...spots(81 + v, 4, 2).map(([x, y]) => stamp("_reed", x, y - 4)))
   sprite(`tundra_${v}`, { w: S, h: S },
-    (c) => ground(c, "W", "w", v + 29, 3.5, 0.24),
+    (c) => ground(c, "W"),
+    ...scatterParts("_drift", 151 + v, 3),
+    ...scatterParts("_sparkle", 161 + v, 4),
     ...spots(97 + v, 3, 3).map(([x, y]) => stamp("_pebble", x, y)))
   sprite(`desert_${v}`, { w: S, h: S }, (c) => {
     ground(c, "A")
@@ -219,12 +237,19 @@ for (let v = 0; v < 2; v++) {
 
 for (let v = 0; v < 3; v++) {
   sprite(`plains_${v}`, { w: S, h: S },
-    (c) => ground(c, "g", "G", v + 9, 6, 0.28),
+    (c) => ground(c, "g"),
+    ...scatterParts("_mark", 171 + v, 3),
+    ...scatterParts("_mark_d", 181 + v, 2),
+    ...scatterParts("_glint", 191 + v, 3),
     ...spots(31 + v, 4, 3).map(([x, y]) => stamp("_tuft", x - 2, y)),
     ...spots(41 + v, 2, 2).map(([x, y], i) => stamp(["_flower_r", "_flower_y", "_flower_w"][(v + i) % 3], x, y)))
-  sprite(`forest_${v}`, { w: S, h: S }, (c) => ground(c, "G", "h", v + 13, 5, 0.35))
+  sprite(`forest_${v}`, { w: S, h: S },
+    (c) => ground(c, "G"),
+    ...scatterParts("_speck", 201 + v, 5),
+    ...scatterParts("_fleck", 211 + v, 3))
   sprite(`mountains_${v}`, { w: S, h: S },
-    (c) => ground(c, "S", "K", v + 21, 5, 0.3),
+    (c) => ground(c, "S"),
+    ...scatterParts("_crack", 221 + v, 3),
     ...spots(61 + v, 3, 3).map(([x, y]) => stamp("_pebble", x, y)))
 }
 

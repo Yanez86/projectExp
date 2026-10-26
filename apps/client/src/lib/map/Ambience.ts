@@ -17,7 +17,7 @@ export interface AmbienceTextures {
 /** Vento, in pixel del mondo al secondo: porta le ombre delle nuvole. */
 const WIND_X = 5;
 const WIND_Y = 1.5;
-const CLOUD_SHADOW_ALPHA = 0.6;
+const CLOUD_SHADOW_ALPHA = 0.42;
 /** Area di schermo (pixel del mondo) per ogni ombra di nuvola. */
 const AREA_PER_SHADOW = 260 * 180;
 const BIRD_SPEED = 26;
