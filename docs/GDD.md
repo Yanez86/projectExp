@@ -1,4 +1,4 @@
-# Documento di design (bozza v0.11)
+# Documento di design (bozza v0.12)
 
 > Stato: bozza stabile per partire. I dettagli (luoghi, dungeon, ricette, ricerche) si definiscono
 > tappa per tappa. Il piano tecnico è in [TECH.md](TECH.md).
@@ -170,11 +170,58 @@ Il giocatore assolda personaggi già fatti, non li crea. Quattro mestieri:
   > un angolo bruciacchiato (tratto *Paura del fuoco*). Corregge le mappe di tutti, anche
   > quando nessuno gliel'ha chiesto.
 
+### Equipaggiamento
+
+- [Deciso] Ogni personaggio ha uno slot per un **ninnolo** (EN: trinket); i mercenari ne hanno
+  due in più, **arma** e **armatura**.
+- [Deciso] Gli oggetti da equipaggiare si trovano nel bottino dei dungeon (§7).
+- [Proposta] Un ninnolo dà un punto (o due, o tre, secondo la rarità) a una statistica, e quindi
+  a ciò che ne dipende: Passo la velocità, Occhio la vista, Vigore il carico dei carovanieri,
+  Vigore e Fegato le spedizioni. Qualcuno ha anche una stranezza.
+- [Proposta] L'arma aiuta a ripulire i livelli di un dungeon, l'armatura protegge dalle ferite.
+  Contano solo nei dungeon.
+- [Proposta] Tre rarità: comune (+1), raro (+2), leggendario (+3); più si scende in un dungeon,
+  più sono rare.
+- [Proposta] Gli oggetti trovati vanno nel forziere della sede; si mettono e si tolgono dalla
+  scheda del personaggio quando è alla sede.
+- [Proposta] Primi oggetti:
+  - ninnoli: **Bussola storta** (Occhio), **Campanella da lumaca** (Passo), **Moneta col
+    buco** (Parlantina), **Dente di troll** (Fegato), **Ditale di ferro** (Vigore);
+  - armi: **Coltellaccio**, **Lancia di frassino**, **Martello di ferro lunare**;
+  - armature: **Giubba imbottita**, **Corazza di cocci**, **Guscio rinforzato**.
+
 ## 7. Mercenari e dungeon
 
 - [Deciso] La gilda assolda mercenari per trovare i dungeon.
 - [Deciso] L'esplorazione dei dungeon non si gioca nel dettaglio: si vede il risultato.
-- [Aperto] Cosa riportano i mercenari dai dungeon.
+- [Deciso] Ogni dungeon ha più livelli di profondità. Un livello ripulito resta vuoto per molto
+  tempo, poi si ripopola.
+- [Deciso] Il rischio: se una spedizione va male, un mercenario può tornare ferito (fermo per un
+  po') o non tornare. Per i Cocciai una ferita può diventare una cicatrice d'oro, con un tratto
+  nuovo.
+- [Deciso] Il bottino: monete, materie rare che si trovano solo nei dungeon, reperti per le
+  ricerche (§9) e oggetti da equipaggiare (§6).
+- [Proposta] Assoldare: ogni cittadina ha una **locanda** con 2 o 3 personaggi già fatti, di
+  qualsiasi mestiere, con la loro storia in quattro capitoli (§6); cambiano ogni 2 giorni di
+  gioco. L'ingaggio costa da 40 a 150 monete secondo le statistiche; il nuovo arrivato parte
+  dalla cittadina. La gilda parte senza mercenari: il primo si trova in una locanda.
+- [Proposta] La spedizione: una squadra da 1 a 3 mercenari va all'ingresso e il giocatore sceglie
+  fino a che livello scendere. Ogni livello dura 2 ore di gioco. Per ogni livello si tira la
+  riuscita: forza della squadra (Vigore, Fegato e armi) contro la difficoltà del livello.
+  - riuscito: il bottino del livello è della squadra, e si scende al successivo;
+  - fallito: la squadra risale con quello che ha trovato fin lì; ognuno rischia una ferita
+    (meno con l'armatura): fermo alla sede per un giorno di gioco. Raramente un ferito non
+    torna più.
+  - Cocciai: una ferita su due diventa una cicatrice d'oro, +1 a Vigore o a Fegato e un capitolo
+    in più nella storia.
+- [Proposta] Da 2 a 4 livelli per dungeon, più profondi lontano dalla sede; difficoltà e bottino
+  crescono con la profondità. Un livello ripulito si ripopola dopo 7 giorni di gioco.
+- [Proposta] Prime materie dei dungeon, un po' strane come le etnie: **ferro lunare** (pallido,
+  pesa la metà), **cristallo d'eco** (ripete l'ultimo suono che ha sentito), **muschio
+  lucente** (fa luce per anni), **seta d'ombra**. Entrano in ricette nuove, da definire con la
+  tappa (per esempio muschio lucente + vetro → lanterne perpetue).
+- [Proposta] Il drago resta per la tappa 6, con le condizioni di vittoria.
+- [Aperto] Una paga giornaliera per i personaggi, oltre all'ingaggio.
 
 ## 8. Linee di produzione e mercato
 
