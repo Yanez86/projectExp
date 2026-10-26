@@ -107,4 +107,8 @@
   .dot.building {
     background: #f4a04c;
   }
+
+  .dot.trading {
+    background: #7fd36b;
+  }
 </style>

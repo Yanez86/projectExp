@@ -14,7 +14,7 @@ import { OUTPOST_COST, OUTPOST_VISION } from "../content/outposts";
 import type { RecipeId } from "../content/recipes";
 import { visionRange } from "../content/vision";
 import { hexEquals, type Hex } from "../hex";
-import { FOG_UNEXPLORED, createFog, updateVisibility, type VisionSource } from "../map/fog";
+import { FOG_UNEXPLORED, createFog, fogAt, updateVisibility, type VisionSource } from "../map/fog";
 import { generateMap } from "../map/generate";
 import { biomeIdAt, inBounds, tileIndex } from "../map/world";
 import { createRng, hashSeed, pick, randInt, type Rng } from "../rng";
@@ -30,8 +30,10 @@ import {
   type WorkshopProblem,
 } from "./economy";
 import { schedule } from "./events";
+import { buyGoods, cargoCapacity, cargoUnits, priceList, quotePurchase, sellCargo, unloadCargo } from "./trade";
 import { findRoute, knownStepDuration, routeDuration } from "./route";
-import { START_TIME, gameTimeAt, type BuildProblem, type Character, type Notice, type World } from "./state";
+import { START_TIME, gameTimeAt, type BuildProblem, type Character, type Notice, type Task, type World } from "./state";
+import type { MaterialId } from "../content/materials";
 
 export interface NewWorldOptions {
   readonly seed: string;
@@ -50,7 +52,18 @@ export type Command =
   | { readonly kind: "build_outpost"; readonly characterId: number; readonly target: Hex }
   | { readonly kind: "build_workshop"; readonly recipe: RecipeId }
   /** Mette in pausa un laboratorio, o lo fa ripartire. */
-  | { readonly kind: "toggle_workshop"; readonly workshopId: number };
+  | { readonly kind: "toggle_workshop"; readonly workshopId: number }
+  /**
+   * Un carovaniere va a vendere `goods` a una cittadina (partendo dalla sede con il carico) o a
+   * comprarle a un mercato; poi torna alla sede e scarica.
+   */
+  | {
+      readonly kind: "trade";
+      readonly characterId: number;
+      readonly placeId: number;
+      readonly mode: "sell" | "buy";
+      readonly goods: readonly (readonly [MaterialId, number])[];
+    };
 
 export type CommandProblem =
   | "unknown-character"
@@ -59,11 +72,23 @@ export type CommandProblem =
   | "busy"
   | "not-builder"
   | BuildProblem
-  | WorkshopProblem;
+  | WorkshopProblem
+  | TradeProblem;
+
+/** Perché un viaggio di commercio non può partire. */
+export type TradeProblem =
+  | "not-caravaneer"
+  | "wrong-place"
+  | "not-sold-here"
+  | "empty"
+  | "capacity"
+  | "loaded"
+  | "not-at-guild"
+  | "stock";
 
 export type CommandResult = { readonly ok: true } | { readonly ok: false; readonly reason: CommandProblem };
 
-/** Crea un mondo nuovo: la mappa, la sede della gilda, due esploratori e un costruttore. */
+/** Crea un mondo nuovo: la mappa, la sede della gilda, due esploratori, un costruttore e un carovaniere. */
 export function createWorld(options: NewWorldOptions): World {
   const { seed, width, height, speed, realNow } = options;
   const map = generateMap({ seed, width, height });
@@ -74,8 +99,9 @@ export function createWorld(options: NewWorldOptions): World {
   const characters = [
     createCharacter(rng, 1, "paperfolk", "explorer", map.start, used),
     createCharacter(rng, 2, second, "explorer", map.start, used),
-    // Il costruttore è un Micelide, che ha il talento.
+    // Il costruttore è un Micelide e il carovaniere un Lumacaio: hanno il talento.
     createCharacter(rng, 3, "mycelings", "builder", map.start, used),
+    createCharacter(rng, 4, "shellfolk", "caravaneer", map.start, used),
   ];
   const world: World = {
     map,
@@ -90,6 +116,7 @@ export function createWorld(options: NewWorldOptions): World {
       characters,
       outposts: [],
       workshops: [],
+      markets: [],
       events: [],
       nextSeq: 0,
     },
@@ -114,7 +141,7 @@ function createCharacter(
   for (const stat of STAT_IDS) {
     stats[stat] = Math.min(STAT_MAX, Math.max(STAT_MIN, e.stats[stat] + randInt(rng, -1, 1)));
   }
-  return { id, name, gender, ethnicity, job, stats, hex, destination: null, route: [], step: null, task: null };
+  return { id, name, gender, ethnicity, job, stats, hex, destination: null, route: [], step: null, task: null, cargo: [] };
 }
 
 /** Fin dove vede un personaggio dove si trova: dipende dal terreno e dal suo Occhio. */
@@ -174,8 +201,9 @@ export function applyCommand(world: World, command: Command): CommandResult {
   }
   const character = findCharacter(world, command.characterId);
   if (!character) return { ok: false, reason: "unknown-character" };
-  // Chi sta costruendo resta sul cantiere.
-  if (character.task?.kind === "building") return { ok: false, reason: "busy" };
+  // Chi sta costruendo resta sul cantiere; chi commercia finisce il suo viaggio.
+  if (character.task?.kind === "building" || character.task?.kind === "trade") return { ok: false, reason: "busy" };
+  if (command.kind === "trade") return startTrade(world, character, command);
   if (command.kind === "stop") {
     // Un passo già iniziato si finisce: ci si ferma sulla casella successiva.
     character.destination = null;
@@ -201,6 +229,71 @@ export function applyCommand(world: World, command: Command): CommandResult {
   if (here && character.task) startConstruction(world, character, world.state.time, []);
   else if (!character.step) startStep(world, character, world.state.time);
   return { ok: true };
+}
+
+/** Prepara e fa partire un viaggio di commercio, se si può. */
+function startTrade(world: World, character: Character, command: Extract<Command, { kind: "trade" }>): CommandResult {
+  const { map, state } = world;
+  if (character.job !== "caravaneer") return { ok: false, reason: "not-caravaneer" };
+  const place = map.places.find((p) => p.id === command.placeId);
+  if (!place || place.kind !== (command.mode === "sell" ? "town" : "market")) return { ok: false, reason: "wrong-place" };
+  if (fogAt(state.fog, map, place.hex) === FOG_UNEXPLORED) return { ok: false, reason: "unexplored" };
+  const goods = command.goods.filter(([, n]) => n > 0).map(([m, n]): [MaterialId, number] => [m, n]);
+  if (goods.length === 0 || goods.some(([, n]) => !Number.isInteger(n))) return { ok: false, reason: "empty" };
+  if (cargoUnits(goods) > cargoCapacity(character)) return { ok: false, reason: "capacity" };
+  if (character.cargo.length > 0) return { ok: false, reason: "loaded" };
+  if (command.mode === "sell") {
+    if (character.step || !hexEquals(character.hex, state.guild.hex)) return { ok: false, reason: "not-at-guild" };
+    if (goods.some(([m, n]) => state.guild.stock[m] < n)) return { ok: false, reason: "stock" };
+  } else {
+    const { featured } = priceList(map, place);
+    if (goods.some(([m]) => !featured.includes(m))) return { ok: false, reason: "not-sold-here" };
+    if (quotePurchase(world, place, goods) > state.guild.gold) return { ok: false, reason: "gold" };
+  }
+  const from = character.step ? character.step.to : character.hex;
+  const route = findRoute(map, state.fog, character, from, place.hex);
+  if (route === null) return { ok: false, reason: "unreachable" };
+
+  if (command.mode === "sell") {
+    for (const [m, n] of goods) state.guild.stock[m] -= n;
+    character.cargo = goods;
+  }
+  character.task = { kind: "trade", placeId: place.id, mode: command.mode, order: goods, returning: false };
+  if (route.length === 0 && !character.step) {
+    // È già sul posto: commercia subito.
+    tradeArrival(world, character, character.task, state.time, []);
+    return { ok: true };
+  }
+  character.destination = place.hex;
+  character.route = route;
+  if (!character.step) startStep(world, character, state.time);
+  return { ok: true };
+}
+
+/** Un carovaniere arriva al luogo del commercio (e riparte per la sede) o alla sede (e scarica). */
+function tradeArrival(world: World, character: Character, task: Extract<Task, { kind: "trade" }>, at: number, notices: Notice[]): void {
+  const { map, state } = world;
+  if (task.returning) {
+    character.task = null;
+    unloadCargo(world, character, at, notices);
+    return;
+  }
+  const place = map.places.find((p) => p.id === task.placeId);
+  if (place && hexEquals(place.hex, character.hex)) {
+    if (task.mode === "sell") sellCargo(world, character, place, at, notices);
+    else buyGoods(world, character, place, task.order, at, notices);
+  }
+  const route = findRoute(map, state.fog, character, character.hex, state.guild.hex);
+  if (route === null || route.length === 0) {
+    character.task = null;
+    if (route === null) notices.push({ kind: "blocked", at, characterId: character.id, hex: character.hex });
+    else unloadCargo(world, character, at, notices);
+    return;
+  }
+  character.task = { ...task, returning: true };
+  character.destination = state.guild.hex;
+  character.route = route;
+  startStep(world, character, at);
 }
 
 /**
@@ -249,8 +342,14 @@ function arrive(world: World, characterId: number, at: number, notices: Notice[]
   if (hexEquals(character.hex, destination)) {
     character.destination = null;
     character.route = [];
-    if (character.task?.kind === "build" && hexEquals(character.task.hex, character.hex)) {
+    const task = character.task;
+    if (task?.kind === "build" && hexEquals(task.hex, character.hex)) {
       startConstruction(world, character, at, notices);
+    } else if (task?.kind === "trade") {
+      tradeArrival(world, character, task, at, notices);
+    } else if (character.cargo.length > 0 && hexEquals(character.hex, world.state.guild.hex)) {
+      // Un carico rimasto da un viaggio interrotto: arrivato alla sede, va in magazzino.
+      unloadCargo(world, character, at, notices);
     } else {
       notices.push({ kind: "arrived", at, characterId, hex: character.hex });
     }

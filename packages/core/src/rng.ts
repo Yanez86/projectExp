@@ -36,3 +36,12 @@ export function pick<T>(rng: Rng, items: readonly T[]): T {
   if (items.length === 0) throw new Error("pick: lista vuota");
   return items[Math.floor(rng() * items.length)] as T;
 }
+
+/** Mescola la lista sul posto (Fisher–Yates) e la restituisce. */
+export function shuffle<T>(rng: Rng, items: T[]): T[] {
+  for (let i = items.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [items[i], items[j]] = [items[j] as T, items[i] as T];
+  }
+  return items;
+}

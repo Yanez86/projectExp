@@ -1,5 +1,5 @@
 import type { EthnicityId, JobId, Stats } from "../content/ethnicities";
-import type { Stock } from "../content/materials";
+import type { MaterialId, Stock } from "../content/materials";
 import type { OutpostKind } from "../content/outposts";
 import type { RecipeId } from "../content/recipes";
 import type { Hex } from "../hex";
@@ -19,7 +19,18 @@ export type Task =
   /** In viaggio per fondare un avamposto in `hex`. */
   | { readonly kind: "build"; readonly hex: Hex }
   /** Fermo sul cantiere finché l'avamposto non è pronto. */
-  | { readonly kind: "building"; readonly outpostId: number };
+  | { readonly kind: "building"; readonly outpostId: number }
+  /**
+   * Un viaggio di commercio: va al luogo, vende il carico (a una cittadina) o compra `order` (a
+   * un mercato), poi torna alla sede e scarica. `returning` dice in quale metà del viaggio è.
+   */
+  | {
+      readonly kind: "trade";
+      readonly placeId: number;
+      readonly mode: "sell" | "buy";
+      readonly order: readonly (readonly [MaterialId, number])[];
+      readonly returning: boolean;
+    };
 
 export interface Character {
   readonly id: number;
@@ -36,6 +47,8 @@ export interface Character {
   route: Hex[];
   step: Step | null;
   task: Task | null;
+  /** Le merci che porta con sé. */
+  cargo: [MaterialId, number][];
 }
 
 /** Un avamposto: raccoglie la materia prima della sua casella e la manda alla gilda. */
@@ -59,6 +72,15 @@ export interface Workshop {
   busyUntil: number | null;
   /** In pausa non comincia cicli nuovi. */
   paused: boolean;
+}
+
+/** Quante unità di una materia un luogo ha scambiato da poco (abbassa o alza i prezzi). */
+export interface Saturation {
+  readonly placeId: number;
+  readonly material: MaterialId;
+  amount: number;
+  /** Da quando conta il recupero. */
+  at: number;
 }
 
 export interface Guild {
@@ -90,7 +112,9 @@ export type Notice =
   | { readonly kind: "build_started"; readonly at: number; readonly characterId: number; readonly outpostId: number }
   | { readonly kind: "build_failed"; readonly at: number; readonly characterId: number; readonly reason: BuildProblem }
   | { readonly kind: "outpost_ready"; readonly at: number; readonly outpostId: number }
-  | { readonly kind: "workshop_ready"; readonly at: number; readonly workshopId: number };
+  | { readonly kind: "workshop_ready"; readonly at: number; readonly workshopId: number }
+  | { readonly kind: "sold" | "bought"; readonly at: number; readonly characterId: number; readonly placeId: number; readonly units: number; readonly gold: number }
+  | { readonly kind: "unloaded"; readonly at: number; readonly characterId: number; readonly units: number };
 
 /** Perché un avamposto non si può fondare in una casella. */
 export type SiteProblem = "unexplored" | "water" | "guild" | "place" | "outpost" | "near-outpost";
@@ -118,6 +142,8 @@ export interface GameState {
   readonly characters: Character[];
   readonly outposts: Outpost[];
   readonly workshops: Workshop[];
+  /** Il ricordo degli scambi recenti in cittadine e mercati. */
+  readonly markets: Saturation[];
   /** Eventi in attesa, in ordine di orario e di inserimento. */
   events: GameEvent[];
   nextSeq: number;

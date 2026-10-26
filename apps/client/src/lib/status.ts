@@ -10,7 +10,7 @@ import {
 import { formatDuration } from "./format";
 
 /** Cosa sta facendo un personaggio, a grandi linee: decide il colore del pallino. */
-export type Activity = "idle" | "moving" | "building";
+export type Activity = "idle" | "moving" | "building" | "trading";
 
 export interface UnitStatus {
   readonly activity: Activity;
@@ -32,6 +32,11 @@ export function unitStatus(world: World, c: Character, realNow: number, t: Trans
     }
   }
   const arrival = estimateArrival(world, c);
+  if (arrival !== null && task?.kind === "trade") {
+    const place = world.map.places.find((p) => p.id === task.placeId)?.name ?? "";
+    const key = task.returning ? "status.returning" : task.mode === "sell" ? "status.goingToSell" : "status.goingToBuy";
+    return { activity: "trading", text: t(key, { place, eta: wait(arrival) }) };
+  }
   if (arrival !== null) {
     const kind = task?.kind === "build" ? outpostKindFor(biomeIdAt(world.map, task.hex)) : undefined;
     return {

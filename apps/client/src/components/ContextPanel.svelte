@@ -13,10 +13,12 @@
     outpostAt,
     placeAt,
     previewRoute,
+    priceList,
     realDelay,
     type Hex,
     type BuildProblem,
     type Outpost,
+    type Place,
     type SiteCheck,
   } from "@exp/core";
   import { formatDuration } from "../lib/format";
@@ -24,6 +26,7 @@
   import { i18n } from "../lib/i18n.svelte";
   import { unitStatus } from "../lib/status";
   import Token from "./Token.svelte";
+  import TradeForm from "./TradeForm.svelte";
 
   const FOG_KEYS = ["fog.unexplored", "fog.explored", "fog.visible"];
 
@@ -68,6 +71,12 @@
     return outpost ? { ...outpost } : undefined;
   });
   let status = $derived(world && character ? unitStatus(world, character, game.now, i18n.t) : undefined);
+  /** Se il carovaniere selezionato può commerciare nel luogo della casella selezionata. */
+  let tradePlace = $derived.by(() => {
+    const place = hexInfo?.place;
+    if (!character || character.job !== "caravaneer" || character.task || !place) return undefined;
+    return place.kind === "town" || place.kind === "market" ? place : undefined;
+  });
 
   /** Se il costruttore selezionato può fondare un avamposto sulla casella selezionata. */
   let site = $derived.by((): SiteCheck | { readonly ok: false; readonly reason: BuildProblem } | undefined => {
@@ -109,6 +118,17 @@
   });
 </script>
 
+{#snippet featured(place: Place)}
+  {#if world && (place.kind === "town" || place.kind === "market")}
+    <p class="featured">
+      {i18n.t(place.kind === "town" ? "place.wanted" : "place.sells")}:
+      {#each priceList(world.map, place).featured as m (m)}
+        <span title={i18n.t(`material.${m}`)}><Token name="mat_{m}" scale={2} /></span>
+      {/each}
+    </p>
+  {/if}
+{/snippet}
+
 {#snippet close()}
   <button type="button" class="close" onclick={() => game.clearSelection()}>
     <span aria-hidden="true">✕</span>
@@ -145,8 +165,13 @@
         {hexInfo.biome ? i18n.t(`biome.${hexInfo.biome}`) : i18n.t("fog.unexplored")} ·
         {i18n.t("hex.title", { q: hexInfo.hex.q, r: hexInfo.hex.r })}
       </p>
-      {#if hexInfo.place}
+      {#if tradePlace}
+        {#key tradePlace.id}
+          <TradeForm {character} place={tradePlace} />
+        {/key}
+      {:else if hexInfo.place}
         <p class="about">{i18n.t(`place.${hexInfo.place.kind}.about`)}</p>
+        {@render featured(hexInfo.place)}
       {:else if hexInfo.outpost}
         <p class="about">{outpostLine(hexInfo.outpost)}</p>
       {/if}
@@ -158,22 +183,28 @@
       {:else if site}
         <p class="warn">{i18n.t("build.blocked", { reason: i18n.t(`reason.${site.reason}`) })}</p>
       {/if}
-      {#if building}
-        <!-- Sul cantiere non si muove. -->
+      {#if building || character.task?.kind === "trade"}
+        <!-- Sul cantiere, o in viaggio per commerciare, non prende altri ordini. -->
       {:else if preview === null}
         <p class="warn">{i18n.t("route.unreachable")}</p>
       {:else if preview?.here}
         {#if !site?.ok}<p class="hint">{i18n.t("route.here")}</p>{/if}
       {:else if preview}
-        <button type="button" class:primary={!site?.ok} onclick={() => game.sendSelected()}>
+        <button type="button" class:primary={!site?.ok && !tradePlace} onclick={() => game.sendSelected()}>
           {i18n.t("action.send", { eta: formatDuration(i18n.t, preview.real) })}
         </button>
       {/if}
-    {:else if character.destination}
+    {:else if character.destination && character.task?.kind !== "trade"}
       <button type="button" onclick={() => game.stopSelected()}>{i18n.t("action.stop")}</button>
-    {:else if !building}
+    {:else if !building && !character.task}
       <p class="hint">
-        {character.job === "builder" ? i18n.t("hint.build") : i18n.t("hint.send", { gender: character.gender })}
+        {#if character.job === "builder"}
+          {i18n.t("hint.build")}
+        {:else if character.job === "caravaneer"}
+          {i18n.t("hint.trade")}
+        {:else}
+          {i18n.t("hint.send", { gender: character.gender })}
+        {/if}
       </p>
     {/if}
   {:else if hexInfo?.place}
@@ -186,6 +217,7 @@
       {@render close()}
     </header>
     <p class="about">{i18n.t(`place.${hexInfo.place.kind}.about`)}</p>
+    {@render featured(hexInfo.place)}
   {:else if hexInfo}
     <header>
       <div class="title">
@@ -287,6 +319,12 @@
 
   .hint {
     color: var(--text);
+  }
+
+  .featured {
+    display: flex;
+    align-items: center;
+    gap: 4px;
   }
 
   button {

@@ -1,6 +1,6 @@
 # Piano tecnico (bozza v0.1)
 
-> Stato: approvato; prime tre tappe fatte. Il design del gioco è in [GDD.md](GDD.md).
+> Stato: approvato; prime quattro tappe fatte. Il design del gioco è in [GDD.md](GDD.md).
 
 ## 1. Obiettivi
 
@@ -170,6 +170,20 @@ le nuvole coprono ciò che non è stato esplorato.
 - `client`: gli avamposti sulla mappa al posto del rilievo, con le luci di notte; il pulsante
   "Costruisci qui" per il costruttore, con il raccolto previsto o il motivo per cui non si può;
   il pannello della sede (magazzino, laboratori, avamposti) dal pulsante con le monete in alto.
+
+## 12. Quarta tappa: cittadine, mercati e carovane (fatta)
+
+- `core`: valori delle materie e regole del commercio (`content/trade.ts`); i prezzi di ogni luogo
+  nascono dal seme della mappa e dal numero del luogo (`priceList`), quindi non si salvano. Si
+  salva solo il ricordo degli scambi recenti (`markets`): quante unità e da quando conta il
+  recupero, che va a unità intere e tiene l'avanzo di tempo, così il conto non dipende da quante
+  volte si guarda. I prezzi sono a numeri interi. Il viaggio di commercio è un compito del
+  personaggio (`task: trade`) con il carico (`cargo`): all'arrivo vende o compra, poi riparte
+  per la sede e scarica. Salvataggi alla versione 3.
+- `client`: il modulo del carico nella scheda del carovaniere (`TradeForm.svelte`: prezzi del
+  momento, quantità, capienza, conto previsto); nelle schede di cittadine e mercati, le merci
+  cercate o vendute. Con un'unità selezionata, toccare una casella dove ci sono altri ne fa la
+  destinazione; per scegliere un'altra unità c'è l'elenco Unità.
 
 ## 12. Domande aperte
 

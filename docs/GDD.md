@@ -1,4 +1,4 @@
-# Documento di design (bozza v0.10)
+# Documento di design (bozza v0.11)
 
 > Stato: bozza stabile per partire. I dettagli (luoghi, dungeon, ricette, ricerche) si definiscono
 > tappa per tappa. Il piano tecnico è in [TECH.md](TECH.md).
@@ -70,8 +70,8 @@ linee di produzione e vende alle città sparse sulla mappa.
   caselle. Dalle colline si vede a 5, dalle montagne a 6, e dalle alture si vede sopra le
   foreste (non sopra le montagne). Con Occhio 7 o più si vede una casella in più. La sede vede
   come un personaggio sulla sua casella.
-- [Proposta] La gilda parte con due esploratori (un Cartiglio e uno di un'altra etnia) e un
-  costruttore micelide.
+- [Proposta] La gilda parte con due esploratori (un Cartiglio e uno di un'altra etnia), un
+  costruttore micelide e una carovaniera o un carovaniere lumacaio.
 - [Proposta] Avamposti:
   - li fonda un costruttore: va sulla casella, paga 60 monete e ci lavora 4 ore di gioco (3 se
     ha il talento del mestiere, come i Micelidi); intanto resta sul cantiere;
@@ -89,9 +89,9 @@ linee di produzione e vende alle città sparse sulla mappa.
   qualcuno non li vede: **cittadine**, **mercati**, **castelli**, **torri del mago** e
   **ingressi di dungeon**. Ogni luogo ha un nome generato; quando un personaggio lo scopre arriva
   un avviso.
-- [Proposta] Cosa offrono (arriva con le prossime tappe):
-  - **cittadina**: compra le merci della gilda, con richieste e prezzi propri (§8);
-  - **mercato**: vende materie prime e permette scambi;
+- [Proposta] Cosa offrono (castelli, torri e dungeon arrivano con le prossime tappe):
+  - **cittadina**: compra le merci della gilda, con prezzi propri e due merci che cerca (§8);
+  - **mercato**: vende tre materie prime (§8);
   - **castello**: il signore della regione dà incarichi e permessi (per esempio per costruire
     avamposti nelle sue terre);
   - **torre del mago**: un mago solitario che insegna segreti utili alle ricerche (§9);
@@ -183,8 +183,7 @@ Il giocatore assolda personaggi già fatti, non li crea. Quattro mestieri:
 - [Deciso] Le materie prime arrivano dalla mappa (avamposti) e dai dungeon.
 - [Deciso] Si vende alle città sparse sulla mappa.
 - [Proposta] Ogni città ha richieste e prezzi propri.
-- [Proposta] La gilda parte con 400 monete; per ora si spendono soltanto, si guadagneranno
-  vendendo alle città (tappa 4).
+- [Proposta] La gilda parte con 400 monete e le guadagna vendendo alle cittadine.
 - [Proposta] La sede ha un magazzino, che tiene fino a 100 unità di ogni materia (quello che non
   ci sta va perso), e posto per 4 laboratori.
 - [Proposta] Un laboratorio costa 80 monete, si costruisce in 2 ore di gioco e lavora una
@@ -208,7 +207,23 @@ Il giocatore assolda personaggi già fatti, non li crea. Quattro mestieri:
   La catena più lunga per ora arriva agli attrezzi: legname → carbone e assi, ferro grezzo +
   carbone → lingotti, lingotti + assi → attrezzi. Le materie dei dungeon (tappa 5) allungheranno
   le catene.
-
+- [Proposta] Ogni materia ha un valore di base in monete, che cresce lungo le catene: grano,
+  legname e argilla 2, sabbia 1, ferro grezzo, erbe e pelli 3; farina 5, pane 6, assi 5,
+  carbone 3, mattoni 4, lingotti di ferro 12, attrezzi 26, vetro 8, cuoio 7, unguento 13.
+- [Proposta] Commercio con le carovane:
+  - lo fa il carovaniere: parte dalla sede con il carico scelto dal magazzino, vende tutto alla
+    cittadina e torna; oppure va a un mercato, compra e torna a scaricare in magazzino; durante
+    il viaggio non prende altri ordini;
+  - porta 10 unità più 2 per punto di Vigore, la metà in più se ha il talento (i Lumacai,
+    "lenti ma capienti");
+  - ogni cittadina paga le materie prime tra il 60 e il 100% del valore, i prodotti tra l'80 e
+    il 120%, e le due merci che cerca tra il 150 e il 180%; ogni mercato vende tre materie prime
+    tra il 110 e il 140% del valore;
+  - ogni unità venduta in una cittadina abbassa del 4% il prezzo delle successive (ogni unità
+    comprata a un mercato lo alza del 4%); il luogo dimentica un'unità ogni 20 minuti di gioco,
+    così vendere sempre la stessa merce nello stesso posto rende sempre meno;
+  - al mercato si compra finché bastano le monete; quello che non ci sta in magazzino va perso.
+- [Aperto] Rotte ripetute (la carovana rifà da sola lo stesso viaggio) e carovane rivali.
 ## 9. Albero tecnologico
 
 - [Deciso] Ci sarà un albero tecnologico.
@@ -243,7 +258,7 @@ Vedi [TECH.md](TECH.md).
 1. Mappa: generazione a esagoni, biomi, nuvole sull'inesplorato, navigazione con mouse e touch.
 2. Sede della gilda, motore a eventi, primi esploratori sulla mappa. (fatta)
 3. Avamposti e materie prime; prime linee di produzione. (fatta)
-4. Città, mercato e carovane.
+4. Città, mercato e carovane. (fatta)
 5. Mercenari e dungeon.
 6. Albero tecnologico, gilde rivali IA, condizioni di vittoria: primo single player completo.
 7. Multiplayer con lobby.

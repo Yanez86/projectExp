@@ -14,6 +14,7 @@ import {
   type Command,
   type CommandResult,
   type Hex,
+  type MaterialId,
   type Notice,
   type RecipeId,
   type World,
@@ -164,6 +165,20 @@ class Game {
         case "outpost_ready":
           this.toast("notice.outpostReady", {}, { kind: outpostKind(n.outpostId) });
           break;
+        case "sold":
+        case "bought": {
+          const c = character(n.characterId);
+          const place = world.map.places.find((p) => p.id === n.placeId);
+          if (c && place) {
+            this.toast(n.kind === "sold" ? "notice.sold" : "notice.bought", { name: c.name, place: place.name, units: n.units, gold: n.gold });
+          }
+          break;
+        }
+        case "unloaded": {
+          const c = character(n.characterId);
+          if (c) this.toast("notice.unloaded", { name: c.name, gender: c.gender, units: n.units });
+          break;
+        }
         case "workshop_ready": {
           const w = world.state.workshops.find((x) => x.id === n.workshopId);
           if (w) this.toast("notice.workshopReady", {}, { kind: `workshop.${w.recipe}` });
@@ -176,16 +191,20 @@ class Game {
     this.persist();
   }
 
-  /** Un tocco sulla mappa: seleziona chi c'è su quella casella, altrimenti la casella. */
+  /**
+   * Un tocco sulla mappa. Senza nessuno selezionato: seleziona chi c'è sulla casella, altrimenti
+   * la casella. Con un'unità selezionata la casella diventa la destinazione, anche se ci sono
+   * altri; toccando la casella dove sta l'unità si passa a chi le sta accanto, se c'è qualcuno.
+   */
   tapHex(hex: Hex): void {
     const world = this.world;
     if (!world) return;
     const gameNow = gameTimeAt(world.state.clock, Date.now());
     const here = world.state.characters.filter((c) => hexEquals(currentHex(c, gameNow), hex));
-    if (here.length > 0) {
-      const index = here.findIndex((c) => c.id === this.selectedId);
+    const selected = here.findIndex((c) => c.id === this.selectedId);
+    if (here.length > 0 && (this.selectedId === undefined || (selected >= 0 && here.length > 1))) {
       // Più personaggi sulla stessa casella: ogni tocco passa al successivo.
-      this.selectedId = here[(index + 1) % here.length]!.id;
+      this.selectedId = here[(selected + 1) % here.length]!.id;
       this.selectedHex = undefined;
       return;
     }
@@ -236,6 +255,14 @@ class Game {
 
   buildWorkshop(recipe: RecipeId): CommandResult | undefined {
     return this.command({ kind: "build_workshop", recipe });
+  }
+
+  /** Il carovaniere selezionato va a vendere (o comprare) queste merci nel luogo indicato. */
+  trade(placeId: number, mode: "sell" | "buy", goods: [MaterialId, number][]): CommandResult | undefined {
+    if (this.selectedId === undefined) return undefined;
+    const result = this.command({ kind: "trade", characterId: this.selectedId, placeId, mode, goods });
+    if (result?.ok) this.selectedHex = undefined;
+    return result;
   }
 
   toggleWorkshop(workshopId: number): void {

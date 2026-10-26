@@ -32,6 +32,7 @@ export function makeCharacter(id: number, hex: Hex, job: JobId = "explorer", eth
     route: [],
     step: null,
     task: null,
+    cargo: [],
   };
 }
 
@@ -55,6 +56,7 @@ export function worldFrom(rows: string[], start: Hex, places: Place[] = []): Wor
       characters: [{ ...makeCharacter(1, start), name: "Folio" }],
       outposts: [],
       workshops: [],
+      markets: [],
       events: [],
       nextSeq: 0,
     },

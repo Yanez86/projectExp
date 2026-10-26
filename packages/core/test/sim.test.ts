@@ -21,14 +21,15 @@ import { worldFrom } from "./helpers";
 const FAR = START_TIME + 1000 * BASE_STEP_MS;
 
 describe("createWorld", () => {
-  it("è deterministico e parte con due esploratori e un costruttore sulla sede", () => {
+  it("è deterministico e parte con due esploratori, un costruttore e un carovaniere sulla sede", () => {
     const a = createWorld({ seed: "s", width: 32, height: 24, speed: 60, realNow: 1000 });
     const b = createWorld({ seed: "s", width: 32, height: 24, speed: 60, realNow: 1000 });
     expect(serializeWorld(a)).toBe(serializeWorld(b));
-    expect(a.state.characters.map((c) => c.job)).toEqual(["explorer", "explorer", "builder"]);
+    expect(a.state.characters.map((c) => c.job)).toEqual(["explorer", "explorer", "builder", "caravaneer"]);
     expect(a.state.characters[0]!.ethnicity).toBe("paperfolk");
     expect(a.state.characters[1]!.ethnicity).not.toBe("paperfolk");
     expect(a.state.characters[2]!.ethnicity).toBe("mycelings");
+    expect(a.state.characters[3]!.ethnicity).toBe("shellfolk");
     for (const c of a.state.characters) expect(hexEquals(c.hex, a.map.start)).toBe(true);
     expect(a.state.fog.state.some((v) => v !== FOG_UNEXPLORED)).toBe(true);
   });
