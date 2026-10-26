@@ -34,8 +34,8 @@ export function edgeOverlays(map: WorldMap, h: Hex): string[] {
   return overlays.sort((a, b) => a.priority - b.priority).map((o) => o.name);
 }
 
-/** Biomi con un rilievo (alberi, colline, montagne) disegnato sopra il terreno. */
-export const RELIEF = new Set<BiomeId>(["forest", "hills", "mountains", "tundra"]);
+/** Biomi con un rilievo (alberi, colline, montagne, rocce, cactus…) disegnato sopra il terreno. */
+export const RELIEF = new Set<BiomeId>(["forest", "hills", "mountains", "tundra", "plains", "desert", "swamp"]);
 
 export function biomeIdOf(map: WorldMap, index: number): BiomeId {
   return BIOME_IDS[map.biomes[index] as number] as BiomeId;

@@ -245,7 +245,8 @@ export class MapView {
       const grid = this.addSprite(this.gridLayer, gridTexture, x, y + HEX_TOP);
       let relief: Sprite | undefined;
       if (RELIEF.has(id)) {
-        relief = this.addSprite(this.objectLayer, this.pick(`${id}_top`, variant), x, y);
+        // Terreno e rilievo scelgono la variante da bit diversi dello stesso numero: si combinano.
+        relief = this.addSprite(this.objectLayer, this.pick(`${id}_top`, variant >> 3), x, y);
         relief.zIndex = row * 2;
       }
       const cloudBase = this.addSprite(this.cloudBaseLayer, cloudBaseTexture, x, y + HEX_TOP);

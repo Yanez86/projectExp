@@ -146,37 +146,133 @@ function hill(name, w, h) {
 hill("_hill", 18, 9)
 hill("_hill_s", 12, 6)
 
-// Una vetta: faccia sinistra in luce, destra in ombra, cresta ondulata, neve in cima.
-function peak(name, w, h, snow, seed) {
+// Una vetta: l'apice può stare di lato, i fianchi sono frastagliati, una cresta divide la faccia
+// in luce (a sinistra) da quella in ombra; cenge sulla roccia e neve con lingue lungo la cresta.
+function peak(name, { w, h, apex = 0.5, snow = 4, seed = 1, jag = 1 }) {
   sprite(name, { w, h, outline: "n", pivot: "bottom" }, (c) => {
-    const ax = (w - 1) / 2
+    const ax = Math.round((w - 1) * apex)
+    const wobble = (y, side) => Math.round((vnoise(y * 0.5 + seed * 3.3, side * 5 + seed * 1.7) - 0.5) * 2 * jag)
     for (let y = 0; y < h; y++) {
-      const half = ((y + 1) * (w / 2)) / h
-      const ridge = ax + Math.round(Math.sin(y * 0.8 + seed) * 1.2)
-      for (let x = 0; x < w; x++) {
-        if (Math.abs(x - ax) > half) continue
-        const lit = x < ridge
+      const t = (y + 1) / h
+      const left = Math.min(ax, Math.round(ax * (1 - t)) + (y > 1 ? wobble(y, 0) : 0))
+      const right = Math.max(ax, Math.round(ax + (w - 1 - ax) * t) + (y > 1 ? wobble(y, 1) : 0))
+      const ridge = ax + Math.round(t * (w - 1 - ax) * 0.25 + Math.sin(y * 0.6 + seed) * 0.8)
+      for (let x = Math.max(0, left); x <= Math.min(w - 1, right); x++) {
+        const lit = x <= ridge
         let k = lit ? "s" : "K"
-        if (lit && x > ridge - 3 && y > snow + 2) k = "S"
-        if (y < snow || (y < snow + 2 && hash(x, y + seed * 31) < 0.45)) k = lit ? "w" : "W"
+        // Canaloni: tratti diagonali che scendono lungo i pendii, più scuri della roccia intorno.
+        if (lit && y > snow + 1 && (x * 2 + y + seed) % 7 === 0 && hash(x * 3, y + seed * 17) < 0.7) k = "S"
+        if (!lit && y > snow + 1 && (x * 2 - y + 70 + seed) % 6 === 0 && hash(x * 5, y + seed * 13) < 0.6) k = "n"
+        if (lit && x === ridge && y > snow + 1) k = "S"
+        const tongue = Math.abs(x - ridge) <= 1 ? 2 + Math.round(hash(seed, x) * 2) : 0
+        const line = snow > 0 ? snow + tongue + Math.round((hash(x, seed * 7) - 0.5) * 2) : 0
+        if (y < line) k = lit ? "w" : "W"
         c.px(x, y, k)
       }
     }
-    // Canaloni: righe scure che scendono sulla faccia in luce.
-    for (let i = 0; i < 2; i++) {
-      const x0 = Math.round(ax - 2 - i * 4), y0 = snow + 2 + i * 3
-      for (let j = 0; j < 4 && y0 + j < h; j++) c.px(x0 - Math.floor(j / 2), y0 + j, "S")
-    }
   })
 }
-peak("_peak", 22, 20, 5, 1)
-peak("_peak_s", 14, 12, 3, 4)
-peak("_peak_m", 18, 16, 4, 2)
+peak("_pk_big", { w: 24, h: 22, apex: 0.42, snow: 6, seed: 1 })
+peak("_pk_tall", { w: 18, h: 25, apex: 0.5, snow: 7, seed: 2 })
+peak("_pk_med", { w: 18, h: 15, apex: 0.38, snow: 4, seed: 3 })
+peak("_pk_med2", { w: 16, h: 14, apex: 0.62, snow: 3, seed: 4 })
+peak("_pk_small", { w: 12, h: 10, apex: 0.45, snow: 2, seed: 5 })
+peak("_pk_small2", { w: 11, h: 9, apex: 0.6, snow: 0, seed: 6 })
+// Uno sperone di roccia: basso, con una cresta irregolare di tre o quattro punte.
+sprite("_crag", { w: 16, h: 8, outline: "n", pivot: "bottom" }, (c) => {
+  for (let x = 0; x < 16; x++) {
+    const top = Math.round(1 + (1 - Math.abs(Math.sin(x * 0.42 + 0.5))) * 3.5 + Math.abs(x - 7.5) * 0.22)
+    for (let y = top; y < 8; y++) c.px(x, y, y === top ? "s" : x > 10 || y > 6 ? "K" : (x + y) % 5 === 0 ? "S" : "s")
+  }
+})
+sprite("_scree", { outline: "n", pivot: "bottom" }, `
+  ...s.
+  .sSKs
+  sSKKK`)
 
 sprite("_rock", { outline: "n", pivot: "bottom" }, `
   .sS.
   sSSK
   SSKK`)
+sprite("_snow_rock", { outline: "n", pivot: "bottom" }, `
+  .ww.
+  wwWS
+  SSKK`)
+
+sprite("_tree_s", { outline: "q", pivot: "bottom" }, `
+  ..GGg..
+  .Gglgg.
+  GgllgGh
+  GggggGh
+  .GGGhh.
+  ...o...`)
+sprite("_tree_big", { outline: "q", pivot: "bottom" }, `
+  .....GGGGG.....
+  ...GGgggggGG...
+  ..GgglllgggGG..
+  .GgglllllgggGh.
+  .GgglllgggggGh.
+  GGgggggggGGGGhh
+  GgGggggGGGGGhhh
+  GGGgggGGGGGhhhh
+  .GGGGGGGGhhhhh.
+  ..hhGGGGhhhhh..
+  ....hhhhhhh....
+  ......oO.......
+  ......oO.......
+  .....ooOO......`)
+sprite("_pine_g", { base: "_pine", swap: { w: "l" } })
+sprite("_pine_s", { outline: "n", pivot: "bottom" }, `
+  ..h..
+  .hwh.
+  .hGh.
+  hwhGh
+  hhGhh
+  ..o..`)
+sprite("_bush", { outline: "q", pivot: "bottom" }, `
+  .GGgG.
+  GgllgG
+  GGgGGh
+  .hhhh.`)
+sprite("_stump", { pivot: "bottom" }, `
+  .oo.
+  oeEO
+  .OO.`)
+sprite("_dead_tree", { pivot: "bottom" }, `
+  O...O..O.
+  .O.O..O..
+  ..OO.O...
+  ...OO....
+  ...OO..O.
+  ...OOO.O.
+  ....OO...
+  ....O....
+  ...OO....
+  ...OO....
+  ..OOOO...`)
+sprite("_cattails", { pivot: "bottom" }, `
+  .o..o.o
+  .O..O.O
+  .h.hh.h
+  .hh.h.h
+  h.h.hh.
+  hh.hh.h`)
+sprite("_cactus", { outline: "q", pivot: "bottom" }, `
+  ...G...
+  ..GgG..
+  ..Ggh..
+  G.Ggh..
+  Gh.gh.G
+  GhGgh.G
+  .GGghGh
+  ...ghG.
+  ...gh..
+  ...gh..`)
+sprite("_dune_rock", { outline: "d", pivot: "bottom" }, `
+  ..aAA..
+  .aAAAz.
+  aAAAzzE
+  AAzzzEE`)
 
 // ---------------------------------------------------------------- terreno
 
@@ -198,59 +294,75 @@ sprite("_mud", "MM")
 /** Una parte timbrata in `count` punti scelti a caso (in modo ripetibile) dentro la casella. */
 const scatterParts = (part, seed, count, margin = 2) => spots(seed, count, margin).map(([x, y]) => stamp(part, x, y))
 
-for (let v = 0; v < 2; v++) {
+sprite("_bones", "p.p\n.pp")
+sprite("_pad", "l")
+sprite("_scree_s", "S.\nKS")
+sprite("_snowpatch", "ww\nw.")
+sprite("_ripple_sand", "aa")
+
+for (let v = 0; v < 3; v++) {
   sprite(`deep_water_${v}`, { w: S, h: S },
     (c) => ground(c, "B"),
-    ...scatterParts("_wave_dark", 101 + v, 3),
-    ...spots(11 + v, 3, 3).map(([x, y]) => stamp("_wave", x - 2, y)))
+    ...scatterParts("_wave_dark", 101 + v, 2 + v),
+    ...spots(11 + v, 2 + (v % 2) * 2, 3).map(([x, y]) => stamp("_wave", x - 2, y)))
   sprite(`shallow_water_${v}`, { w: S, h: S },
     (c) => ground(c, "c"),
-    ...scatterParts("_ripple_dark", 111 + v, 3),
-    ...spots(21 + v, 3, 3).map(([x, y]) => stamp("_ripple", x - 2, y)))
+    ...scatterParts("_ripple_dark", 111 + v, 2 + v),
+    ...spots(21 + v, 2 + ((v + 1) % 2) * 2, 3).map(([x, y]) => stamp("_ripple", x - 2, y)))
   sprite(`hills_${v}`, { w: S, h: S },
     (c) => ground(c, "g"),
-    ...scatterParts("_dirt", 121 + v, 3),
+    ...scatterParts("_dirt", 121 + v, 2 + v * 2),
     ...scatterParts("_mark", 131 + v, 3),
     ...spots(51 + v, 3, 3).map(([x, y]) => stamp("_tuft_dry", x - 2, y)))
   sprite(`swamp_${v}`, { w: S, h: S },
     (c) => ground(c, "m"),
     ...scatterParts("_mud", 141 + v, 4),
-    ...spots(71 + v, 3, 4).map(([x, y]) => stamp("_pool", x - 4, y - 1)),
-    ...spots(81 + v, 4, 2).map(([x, y]) => stamp("_reed", x, y - 4)))
+    ...spots(71 + v, 2 + (v % 2), 4).map(([x, y]) => stamp("_pool", x - 4, y - 1)),
+    ...(v === 2 ? scatterParts("_pad", 145, 5) : []),
+    ...spots(81 + v, 3 + v, 2).map(([x, y]) => stamp("_reed", x, y - 4)))
   sprite(`tundra_${v}`, { w: S, h: S },
     (c) => ground(c, "W"),
-    ...scatterParts("_drift", 151 + v, 3),
+    ...scatterParts("_drift", 151 + v, 2 + v),
     ...scatterParts("_sparkle", 161 + v, 4),
-    ...spots(97 + v, 3, 3).map(([x, y]) => stamp("_pebble", x, y)))
-  sprite(`desert_${v}`, { w: S, h: S }, (c) => {
-    ground(c, "A")
-    // Creste di dune: un arco chiaro con l'ombra subito sotto.
-    for (let i = 0; i < 3; i++) {
-      const y0 = 8 + i * 8 + v * 2, x0 = 4 + ((i + v) % 2) * 6
-      for (let x = x0; x < x0 + 16; x++) {
-        const y = y0 + Math.round(Math.sin((x - x0) / 5) * 2)
-        if (inner(x, y) && inner(x, y + 1)) { c.px(x, y, "a"); c.px(x, y + 1, "z") }
-      }
-    }
-  })
+    ...spots(97 + v, 2 + v, 3).map(([x, y]) => stamp("_pebble", x, y)))
+  sprite(`forest_${v}`, { w: S, h: S },
+    (c) => ground(c, "G"),
+    ...scatterParts("_speck", 201 + v, 4 + v),
+    ...scatterParts("_fleck", 211 + v, 3))
+  sprite(`mountains_${v}`, { w: S, h: S },
+    (c) => ground(c, "S"),
+    ...scatterParts("_crack", 221 + v, 2 + v),
+    ...scatterParts("_scree_s", 231 + v, 3),
+    ...(v === 2 ? scatterParts("_snowpatch", 235, 3) : []),
+    ...spots(61 + v, 3, 3).map(([x, y]) => stamp("_pebble", x, y)))
 }
 
-for (let v = 0; v < 3; v++) {
+for (let v = 0; v < 4; v++) {
   sprite(`plains_${v}`, { w: S, h: S },
     (c) => ground(c, "g"),
     ...scatterParts("_mark", 171 + v, 3),
     ...scatterParts("_mark_d", 181 + v, 2),
     ...scatterParts("_glint", 191 + v, 3),
-    ...spots(31 + v, 4, 3).map(([x, y]) => stamp("_tuft", x - 2, y)),
-    ...spots(41 + v, 2, 2).map(([x, y], i) => stamp(["_flower_r", "_flower_y", "_flower_w"][(v + i) % 3], x, y)))
-  sprite(`forest_${v}`, { w: S, h: S },
-    (c) => ground(c, "G"),
-    ...scatterParts("_speck", 201 + v, 5),
-    ...scatterParts("_fleck", 211 + v, 3))
-  sprite(`mountains_${v}`, { w: S, h: S },
-    (c) => ground(c, "S"),
-    ...scatterParts("_crack", 221 + v, 3),
-    ...spots(61 + v, 3, 3).map(([x, y]) => stamp("_pebble", x, y)))
+    ...spots(31 + v, 3 + (v % 2) * 2, 3).map(([x, y]) => stamp("_tuft", x - 2, y)),
+    // L'ultima variante è un prato fiorito.
+    ...spots(41 + v, v === 3 ? 8 : 2, 2).map(([x, y], i) => stamp(["_flower_r", "_flower_y", "_flower_w"][(v + i) % 3], x, y)))
+  sprite(`desert_${v}`, { w: S, h: S }, (c) => {
+    ground(c, "A")
+    if (v < 3) {
+      // Creste di dune: un arco chiaro con l'ombra subito sotto.
+      for (let i = 0; i < 3 - (v === 2 ? 1 : 0); i++) {
+        const y0 = 8 + i * 8 + v * 2, x0 = 4 + ((i + v) % 2) * 6
+        const len = 12 + ((i + v) % 3) * 3
+        for (let x = x0; x < x0 + len; x++) {
+          const y = y0 + Math.round(Math.sin((x - x0) / (4 + v)) * 2)
+          if (inner(x, y) && inner(x, y + 1)) { c.px(x, y, "a"); c.px(x, y + 1, "z") }
+        }
+      }
+    }
+  },
+  ...(v === 3 ? scatterParts("_ripple_sand", 251, 6) : []),
+  ...(v >= 2 ? scatterParts("_pebble", 255 + v, 2) : []),
+  ...(v === 1 ? scatterParts("_bones", 259, 1, 4) : []))
 }
 
 // ---------------------------------------------------------------- rilievo
@@ -263,9 +375,13 @@ shadowPart("_shadow_s", 12, 4)
 shadowPart("_shadow_m", 16, 5)
 shadowPart("_shadow_l", 22, 6)
 const SHADOW = {
-  _tree: ["_shadow_s", 3], _tree_b: ["_shadow_s", 3], _pine: ["_shadow_s", 3], _rock: ["_shadow_xs", 2],
+  _tree: ["_shadow_s", 3], _tree_b: ["_shadow_s", 3], _tree_s: ["_shadow_xs", 2], _tree_big: ["_shadow_m", 4],
+  _pine: ["_shadow_s", 3], _pine_g: ["_shadow_s", 3], _pine_s: ["_shadow_xs", 2], _bush: ["_shadow_xs", 2],
+  _stump: ["_shadow_xs", 1], _dead_tree: ["_shadow_xs", 2], _cattails: ["_shadow_xs", 1], _cactus: ["_shadow_xs", 2],
+  _rock: ["_shadow_xs", 2], _snow_rock: ["_shadow_xs", 2], _dune_rock: ["_shadow_s", 2], _scree: ["_shadow_xs", 1],
   _hill: ["_shadow_m", 4], _hill_s: ["_shadow_s", 3],
-  _peak: ["_shadow_l", 6], _peak_m: ["_shadow_m", 5], _peak_s: ["_shadow_m", 3],
+  _pk_big: ["_shadow_l", 6], _pk_tall: ["_shadow_m", 5], _pk_med: ["_shadow_m", 4], _pk_med2: ["_shadow_m", 4],
+  _pk_small: ["_shadow_s", 3], _pk_small2: ["_shadow_s", 3], _crag: ["_shadow_m", 3],
 }
 /** Le ombre di tutte le cose, poi le cose: [nome, x, y] con il perno in basso al centro. */
 const withShadows = (things) => [
@@ -273,33 +389,42 @@ const withShadows = (things) => [
   ...things.map(([name, x, y]) => stamp(name, x, y)),
 ]
 
-// Alberi dal fondo verso il davanti, così quelli vicini coprono quelli lontani.
-const FOREST = [
-  [[9, 28], [22, 27], [15, 35], [5, 40], [26, 39]],
-  [[12, 27], [23, 31], [7, 35], [18, 40], [27, 41]],
-  [[6, 30], [17, 27], [25, 33], [11, 39], [21, 43]],
-]
-const HILLS = [
-  [["_hill", 10, 31], ["_hill_s", 23, 34], ["_hill", 17, 42]],
-  [["_hill_s", 8, 30], ["_hill", 20, 33], ["_hill_s", 11, 41], ["_hill_s", 24, 43]],
-]
-const MOUNTAINS = [
-  [["_peak", 13, 37], ["_peak_s", 24, 42], ["_rock", 8, 44]],
-  [["_peak_m", 9, 34], ["_peak", 19, 40], ["_rock", 27, 37]],
-  [["_peak_s", 7, 32], ["_peak", 17, 36], ["_peak_s", 26, 43]],
-]
-const TUNDRA = [
-  [["_pine", 10, 32], ["_pine", 21, 38], ["_rock", 15, 43]],
-  [["_pine", 10, 35], ["_rock", 22, 31], ["_pine", 21, 41]],
-]
-for (let v = 0; v < 3; v++) {
-  sprite(`forest_top_${v}`, { w: S, h: S + TOP },
-    ...withShadows(FOREST[v].map(([x, y], i) => [(i + v) % 3 === 1 ? "_tree_b" : "_tree", x, y])))
-  sprite(`mountains_top_${v}`, { w: S, h: S + TOP }, ...withShadows(MOUNTAINS[v]))
+// Composizioni di rilievo per bioma, dal fondo verso il davanti (y crescente). Una lista vuota
+// lascia la casella libera: in pianura, deserto e palude gli oggetti sono rari.
+const RELIEF = {
+  forest: [
+    [["_tree", 9, 28], ["_tree", 22, 27], ["_tree_b", 15, 35], ["_tree", 5, 40], ["_tree", 26, 39]],
+    [["_tree", 12, 27], ["_tree_b", 23, 31], ["_tree", 7, 35], ["_tree", 18, 40], ["_tree_b", 27, 41]],
+    [["_tree_b", 17, 27], ["_tree", 6, 30], ["_tree", 25, 33], ["_tree", 11, 39], ["_tree_b", 21, 43]],
+    [["_pine_g", 10, 29], ["_tree", 21, 29], ["_pine_g", 16, 36], ["_tree_b", 7, 41], ["_pine_g", 24, 42]],
+    [["_tree_big", 13, 36], ["_bush", 24, 37], ["_stump", 9, 42], ["_tree_s", 21, 43]],
+  ],
+  hills: [
+    [["_hill", 10, 31], ["_hill_s", 23, 34], ["_hill", 17, 42]],
+    [["_hill_s", 8, 30], ["_hill", 20, 33], ["_hill_s", 11, 41], ["_hill_s", 24, 43]],
+    [["_tree_s", 21, 30], ["_hill", 10, 34], ["_hill_s", 23, 40], ["_hill", 13, 43]],
+    [["_hill", 16, 36], ["_rock", 8, 41], ["_hill_s", 24, 43]],
+  ],
+  mountains: [
+    [["_pk_big", 14, 40], ["_rock", 6, 43], ["_pk_small", 25, 43]],
+    [["_pk_med", 10, 35], ["_pk_tall", 20, 41]],
+    [["_pk_small", 6, 33], ["_pk_med2", 16, 36], ["_pk_small2", 26, 38], ["_crag", 13, 44]],
+    [["_pk_tall", 15, 41], ["_rock", 6, 42], ["_crag", 25, 44]],
+    [["_crag", 9, 37], ["_pk_med", 20, 40], ["_scree", 11, 44]],
+    [["_pk_med2", 9, 37], ["_pk_med", 21, 40], ["_scree", 14, 44]],
+  ],
+  tundra: [
+    [["_pine", 10, 32], ["_pine", 21, 38], ["_rock", 15, 43]],
+    [["_pine", 10, 35], ["_rock", 22, 31], ["_pine", 21, 41]],
+    [["_pine_s", 8, 31], ["_pine_s", 19, 33], ["_pine_s", 13, 39], ["_snow_rock", 23, 42]],
+    [["_snow_rock", 12, 36], ["_pine", 21, 42]],
+  ],
+  plains: [[], [], [], [], [], [], [], [["_tree_s", 20, 34]], [["_bush", 10, 36], ["_bush", 22, 42]], [["_rock", 13, 40]]],
+  desert: [[], [], [], [], [], [["_cactus", 18, 38]], [["_dune_rock", 13, 40]], [["_cactus", 10, 34], ["_cactus", 22, 42]]],
+  swamp: [[], [["_dead_tree", 16, 38]], [["_cattails", 11, 36], ["_cattails", 22, 41]], [["_cattails", 9, 34], ["_dead_tree", 20, 42]]],
 }
-for (let v = 0; v < 2; v++) {
-  sprite(`hills_top_${v}`, { w: S, h: S + TOP }, ...withShadows(HILLS[v]))
-  sprite(`tundra_top_${v}`, { w: S, h: S + TOP }, ...withShadows(TUNDRA[v]))
+for (const [biome, variants] of Object.entries(RELIEF)) {
+  variants.forEach((things, v) => sprite(`${biome}_top_${v}`, { w: S, h: S + TOP }, ...withShadows(things)))
 }
 
 // ---------------------------------------------------------------- transizioni

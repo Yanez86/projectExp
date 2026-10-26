@@ -92,6 +92,11 @@ Il server andrà in `apps/server/`.
 
 ## 6. Grafica
 
+- Ogni bioma ha più varianti di terreno e di rilievo (montagne disegnate da una vetta
+  parametrica: apice, fianchi frastagliati, cresta, canaloni, neve). Terreno e rilievo scelgono la
+  variante da bit diversi del numero casuale della casella, così si combinano; in pianura,
+  deserto e palude molte varianti di rilievo sono vuote, perché gli oggetti restino rari.
+
 - Sorgenti `.px.js` in `art/`, compilate da pxl in sprite sheet PNG + JSON che Pixi carica
   direttamente.
 - Gli sprite sheet generati si committano: la build del gioco non dipende dalla skill.
