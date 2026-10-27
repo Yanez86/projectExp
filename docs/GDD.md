@@ -70,7 +70,9 @@ linee di produzione e vende alle città sparse sulla mappa.
 - [Proposta] Atmosfera (solo estetica): il giorno e la notte seguono l'orologio del mondo (alba,
   giorno, tramonto, notte blu con le finestre della sede accese); ombre sotto alberi, montagne,
   colline e sede; ombre di nuvole portate dal vento; stormi di uccelli con la loro ombra, di
-  giorno. Uccelli e ombre di nuvole si spengono se il sistema chiede meno movimento.
+  giorno; il mare si muove (creste che si gonfiano e si rompono in schiuma, riflessi di sole,
+  risacca sulla spiaggia che corre lungo la costa) e ogni tanto un pesce salta. Tutte queste
+  animazioni si spengono se il sistema chiede meno movimento (o dalle opzioni).
 - [Proposta] Gli altri terreni aperti (deserto, tundra, palude) vedono come la pianura, a 4
   caselle. Dalle colline si vede a 5, dalle montagne a 6, e dalle alture si vede sopra le
   foreste (non sopra le montagne). Con Occhio 7 o più si vede una casella in più. La sede vede

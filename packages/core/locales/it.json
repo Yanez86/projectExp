@@ -55,7 +55,7 @@
   "debug.newGame": "Nuova partita",
   "hint.send": "Tocca un esagono per {gender, select, f {mandarla} other {mandarlo}} lì.",
   "debug.dayNight": "Giorno e notte",
-  "debug.ambience": "Uccelli e ombre di nuvole",
+  "debug.ambience": "Animazioni: uccelli, nuvole e mare",
   "debug.skip": "Avanti di {hours} ore",
   "error.title": "Il gioco non è partito",
   "error.reload": "Ricarica",

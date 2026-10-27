@@ -12,6 +12,8 @@ export interface AmbienceTextures {
   bird: readonly Texture[];
   birdShadow: Texture;
   cloudShadows: readonly Texture[];
+  /** Il salto di un pesce, fotogramma per fotogramma; la riga dell'acqua è a 7/9 dell'altezza. */
+  fish: readonly Texture[];
 }
 
 /** Vento, in pixel del mondo al secondo: porta le ombre delle nuvole. */
@@ -28,6 +30,13 @@ const BIRD_SHADOW_DY = 30;
 const FLOCK_GAP_MIN_MS = 6000;
 const FLOCK_GAP_MAX_MS = 18000;
 const MARGIN = 90;
+/** Ogni tanto un pesce salta, dove sullo schermo c'è acqua scoperta. */
+const FISH_GAP_MIN_MS = 2500;
+const FISH_GAP_MAX_MS = 9000;
+const FISH_FRAME_MS = 110;
+const FISH_WATERLINE = 7 / 9;
+/** Il salto va da 3 px a sinistra a 3 px a destra del centro: anche lì deve esserci acqua. */
+const FISH_REACH = 6;
 
 interface Drifter {
   sprite: Sprite;
@@ -43,6 +52,11 @@ interface Bird {
   phase: number;
 }
 
+interface Jump {
+  sprite: Sprite;
+  start: number;
+}
+
 interface Flock {
   birds: Bird[];
   x: number;
@@ -54,14 +68,17 @@ interface Flock {
 const random = (min: number, max: number) => min + Math.random() * (max - min);
 
 /**
- * Vita sulla mappa che non fa parte del gioco: ombre di nuvole portate dal vento e stormi di
- * uccelli con la loro ombra. Solo estetica: usa numeri casuali veri e non tocca la simulazione.
+ * Vita sulla mappa che non fa parte del gioco: ombre di nuvole portate dal vento, stormi di
+ * uccelli con la loro ombra, pesci che saltano. Solo estetica: usa numeri casuali veri e non
+ * tocca la simulazione.
  */
 export class Ambience {
   private shadows: Drifter[] = [];
   private flocks: Flock[] = [];
+  private jumps: Jump[] = [];
   private last = 0;
   private nextFlockAt = 0;
+  private nextFishAt = 0;
   /** Di notte gli uccelli non partono (quelli già in volo finiscono il giro). */
   birdsAllowed = true;
 
@@ -69,6 +86,8 @@ export class Ambience {
     private readonly groundLayer: Container,
     private readonly skyLayer: Container,
     private readonly textures: AmbienceTextures,
+    /** Se in un punto del mondo c'è acqua scoperta. */
+    private readonly waterAt: (x: number, y: number) => boolean,
   ) {}
 
   clear(): void {
@@ -77,8 +96,10 @@ export class Ambience {
       b.sprite.destroy();
       b.shadow.destroy();
     }
+    for (const j of this.jumps) j.sprite.destroy();
     this.shadows = [];
     this.flocks = [];
+    this.jumps = [];
     this.last = 0;
   }
 
@@ -88,7 +109,50 @@ export class Ambience {
     this.last = now;
     let changed = this.stepShadows(dt, view);
     changed = this.stepBirds(now, dt, view) || changed;
+    changed = this.stepFish(now, view) || changed;
     return changed;
+  }
+
+  private stepFish(now: number, view: ViewRect): boolean {
+    if (this.nextFishAt === 0) this.nextFishAt = now + random(1000, 4000);
+    let changed = false;
+    if (now >= this.nextFishAt) {
+      this.nextFishAt = now + random(FISH_GAP_MIN_MS, FISH_GAP_MAX_MS);
+      changed = this.spawnFish(now, view);
+    }
+    const frames = this.textures.fish;
+    this.jumps = this.jumps.filter((j) => {
+      const frame = frames[Math.floor((now - j.start) / FISH_FRAME_MS)];
+      if (!frame) {
+        j.sprite.destroy();
+        changed = true;
+        return false;
+      }
+      if (j.sprite.texture !== frame) {
+        j.sprite.texture = frame;
+        changed = true;
+      }
+      return true;
+    });
+    return changed;
+  }
+
+  /** Un pesce in un punto a caso dello schermo, se è acqua; se no, sarà per la prossima volta. */
+  private spawnFish(now: number, view: ViewRect): boolean {
+    const first = this.textures.fish[0];
+    if (!first) return false;
+    for (let attempt = 0; attempt < 12; attempt++) {
+      const x = Math.round(random(view.left + 8, view.right - 8));
+      const y = Math.round(random(view.top + 8, view.bottom - 8));
+      if (!this.waterAt(x, y) || !this.waterAt(x - FISH_REACH, y) || !this.waterAt(x + FISH_REACH, y)) continue;
+      const sprite = new Sprite(first);
+      sprite.anchor.set(0.5, FISH_WATERLINE);
+      sprite.position.set(x, y);
+      this.groundLayer.addChild(sprite);
+      this.jumps.push({ sprite, start: now });
+      return true;
+    }
+    return false;
   }
 
   private stepShadows(dt: number, view: ViewRect): boolean {

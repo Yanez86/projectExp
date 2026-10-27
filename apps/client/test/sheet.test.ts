@@ -24,6 +24,17 @@ describe("sprite sheet", () => {
     for (const biome of RELIEF) expect(frames, `${biome}_top`).toContain(`${biome}_top_0`);
   });
 
+  it("ha il mare animato e il pesce che salta", () => {
+    for (let k = 1; k < 8; k++) {
+      for (let v = 0; v < 3; v++) {
+        expect(frames).toContain(`deep_water_${v}_f${k}`);
+        expect(frames).toContain(`shallow_water_${v}_f${k}`);
+      }
+      for (let d = 0; d < 6; d++) expect(frames).toContain(`shore_${d}_f${k}`);
+    }
+    for (let k = 0; k < 7; k++) expect(frames).toContain(`fish_${k}`);
+  });
+
   it("ha un segnalino per ogni etnia, un'icona per ogni materia e oggetto", () => {
     for (const id of ETHNICITY_IDS) expect(frames, id).toContain(`char_${id}`);
     for (const id of MATERIAL_IDS) expect(frames, id).toContain(`mat_${id}`);

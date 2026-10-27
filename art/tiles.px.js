@@ -303,15 +303,56 @@ sprite("_scree_s", "S.\nKS")
 sprite("_snowpatch", "ww\nw.")
 sprite("_ripple_sand", "aa")
 
+// L'acqua si muove: WATER_FRAMES fotogrammi che il gioco fa girare (MapView). Il primo ha il nome
+// della casella, gli altri `_f1`, `_f2`… Sul fondo, gli orli chiari di piccole celle d'onda che si
+// allargano e si stringono sul posto, ognuno col suo tempo; sulle creste più alte del mare aperto
+// un filo di schiuma, e qua e là un riflesso di sole che si accende e si spegne.
+const WATER_FRAMES = 8
+/** La vita di un orlo d'onda, un fotogramma per volta: nasce, si allarga, si stringe, sparisce. */
+const SWELL = [0, 1, 2, 3, 2, 1, 0, 0]
+sprite("_crest_1", "bb")
+sprite("_crest_3", ".bbbb.\nb....b")
+sprite("_crest_3f", ".ffff.\nb....b")
+sprite("_ripple_1", "ff")
+sprite("_ripple_3", ".ffff.\nf....f")
+sprite("_sun_glint", ".f.\nfwf\n.f.")
+
+/** Gli orli d'onda di una casella al fotogramma k: [nascente, medio, pieno, pieno con schiuma]. */
+function swell(k, seed, count, parts, foam) {
+  return spots(seed, count, 3).flatMap(([x, y], i) => {
+    const stage = SWELL[(k + Math.floor(hash(i, seed + 500) * WATER_FRAMES)) % WATER_FRAMES]
+    if (stage === 0) return []
+    if (stage === 1) return [stamp(parts[0], x - 1, y + 1)]
+    if (stage === 2) return [stamp(parts[1], x - 2, y)]
+    return [stamp(hash(seed + 900, i) < foam ? parts[3] : parts[2], x - 3, y)]
+  })
+}
+
+/** Riflessi di sole: una stella per un fotogramma, un punto per il successivo, poi niente. */
+function glints(k, seed, count) {
+  return spots(seed, count, 2).flatMap(([x, y], i) => {
+    const t = (k + Math.floor(hash(i, seed + 700) * WATER_FRAMES)) % WATER_FRAMES
+    return t === 0 ? [stamp("_sun_glint", x - 1, y - 1)] : t === 1 ? [stamp("_sparkle", x, y)] : []
+  })
+}
+
 for (let v = 0; v < 3; v++) {
-  sprite(`deep_water_${v}`, { w: S, h: S },
-    (c) => ground(c, "B"),
-    ...scatterParts("_wave_dark", 101 + v, 2 + v),
-    ...spots(11 + v, 2 + (v % 2) * 2, 3).map(([x, y]) => stamp("_wave", x - 2, y)))
-  sprite(`shallow_water_${v}`, { w: S, h: S },
-    (c) => ground(c, "c"),
-    ...scatterParts("_ripple_dark", 111 + v, 2 + v),
-    ...spots(21 + v, 2 + ((v + 1) % 2) * 2, 3).map(([x, y]) => stamp("_ripple", x - 2, y)))
+  for (let k = 0; k < WATER_FRAMES; k++) {
+    const frame = k === 0 ? "" : `_f${k}`
+    sprite(`deep_water_${v}${frame}`, { w: S, h: S },
+      (c) => ground(c, "B"),
+      ...scatterParts("_wave_dark", 101 + v, 2 + v),
+      ...swell(k, 11 + v, 5, ["_crest_1", "_wave", "_crest_3", "_crest_3f"], 0.5),
+      ...glints(k, 41 + v, 1 + (v % 2)))
+    sprite(`shallow_water_${v}${frame}`, { w: S, h: S },
+      (c) => ground(c, "c"),
+      ...scatterParts("_ripple_dark", 111 + v, 2 + v),
+      ...swell(k, 21 + v, 4, ["_ripple_1", "_ripple", "_ripple_3", "_ripple_3"], 0),
+      ...glints(k, 51 + v, 1))
+  }
+}
+
+for (let v = 0; v < 3; v++) {
   sprite(`hills_${v}`, { w: S, h: S },
     (c) => ground(c, "g"),
     ...scatterParts("_dirt", 121 + v, 2 + v * 2),
@@ -600,19 +641,29 @@ Object.entries(EDGE).forEach(([biome, [base, dot]], b) => {
   }
 })
 
-// Costa vista dall'acqua: una spiaggia stretta e una riga di schiuma che si sfrangia.
+// Costa vista dall'acqua: una spiaggia stretta e una riga di schiuma che si sfrangia. La risacca
+// la muove: l'onda sale sulla sabbia, la lascia bagnata e torna indietro. Per ogni fotogramma,
+// quanto è salita (0 al largo, 1 in cima) e quanto è larga la sabbia bagnata.
+const SWASH = [0, 0.4, 0.8, 1, 0.85, 0.6, 0.35, 0.15]
+const WET = [0.3, 0.2, 0.5, 1, 1.4, 1.4, 1, 0.6]
 for (let d = 0; d < 6; d++) {
-  sprite(`shore_${d}`, { w: S, h: S }, (c) => {
-    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
-      if (!inHex(x, y)) continue
-      const { dist, along } = edgeDist(d, x, y)
-      const sand = 1.2 + vnoise(along * 6 + d * 2.1, d) * 1.8
-      if (dist < sand - 0.6) c.px(x, y, "a")
-      else if (dist < sand + 0.4) c.px(x, y, "A")
-      else if (dist < sand + 1.4) c.px(x, y, "f")
-      else if (dist < sand + 3.5 && bayer(x, y) < 0.3 - (dist - sand - 1.4) * 0.12) c.px(x, y, "f")
-    }
-  })
+  for (let k = 0; k < WATER_FRAMES; k++) {
+    sprite(`shore_${d}${k === 0 ? "" : `_f${k}`}`, { w: S, h: S }, (c) => {
+      for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+        if (!inHex(x, y)) continue
+        const { dist, along } = edgeDist(d, x, y)
+        const sand = 1.2 + vnoise(along * 6 + d * 2.1, d) * 1.8
+        // Il lato verso il largo della riga di schiuma.
+        const foam = sand + 2 - SWASH[k] * 2.4
+        if (dist >= foam - 1 && dist < foam) c.px(x, y, "f")
+        else if (dist < foam - 1) {
+          if (dist < sand - 0.6 - WET[k]) c.px(x, y, "a")
+          else if (dist < sand + 0.4) c.px(x, y, "A")
+        } else if (dist < sand + 0.4) c.px(x, y, "c")
+        else if (dist < foam + 2.1 && bayer(x, y) < 0.3 - (dist - foam) * 0.12) c.px(x, y, "f")
+      }
+    })
+  }
 }
 
 // ---------------------------------------------------------------- griglia e selezione
@@ -1463,10 +1514,33 @@ sprite("ui_moon", { w: 13, h: 13 }, (c) => {
   }
 })
 
+// ---------------------------------------------------------------- pesce
+
+// Ogni tanto un pesce salta fuori dall'acqua (Ambience): esce in A, fa un arco e rientra in B;
+// dove passa l'acqua si apre in un anello che si allarga e si rompe in punti. fish_0…fish_6.
+sprite("_fish_up", "..W\n.W.\nv..")
+sprite("_fish_top", "vWW")
+sprite("_fish_down", "v..\n.W.\n..W")
+sprite("_splash", "f.f\n.f.")
+sprite("_splash_out", "f.f\n.W.")
+sprite("_ring_s", ".fff.\nf...f\n.fff.")
+sprite("_ring_l", ".fffff.\nf.....f\n.fffff.")
+sprite("_ring_d", ".f.f.f.\nf.....f\n.f.f.f.")
+const FISH = [
+  [["_splash_out", 2, 5]],
+  [["_fish_up", 3, 2], ["_ring_s", 1, 6]],
+  [["_fish_top", 5, 1], ["_ring_l", 0, 6]],
+  [["_fish_down", 7, 2], ["_ring_d", 0, 6]],
+  [["_splash", 8, 3], ["_ring_s", 7, 6]],
+  [["_ring_l", 6, 6]],
+  [["_ring_d", 6, 6]],
+]
+FISH.forEach((parts, k) => sprite(`fish_${k}`, { w: 13, h: 9 }, ...parts.map(([n, x, y]) => stamp(n, x, y))))
+
 // ---------------------------------------------------------------- foglio
 
 sheet("tiles", [
   "deep_water_*", "shallow_water_*", "plains_*", "forest_*", "hills_*", "mountains_*",
   "swamp_*", "desert_*", "tundra_*", "edge_*", "shore_*", "grid", "select",
-  "cloud_*", "guild*", "char_*", "route_*", "bird*", "place_*", "outpost_*", "mat_*", "item_*", "coin", "ui_*",
+  "cloud_*", "guild*", "char_*", "route_*", "bird*", "fish_*", "place_*", "outpost_*", "mat_*", "item_*", "coin", "ui_*",
 ], { pad: 1 })

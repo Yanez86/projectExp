@@ -55,7 +55,7 @@
   "debug.newGame": "New game",
   "hint.send": "Tap a hex to send them there.",
   "debug.dayNight": "Day and night",
-  "debug.ambience": "Birds and cloud shadows",
+  "debug.ambience": "Animations: birds, clouds and sea",
   "debug.skip": "Skip {hours} hours",
   "error.title": "The game didn't start",
   "error.reload": "Reload",

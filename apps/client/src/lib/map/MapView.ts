@@ -2,6 +2,7 @@ import { Application, Assets, Container, Sprite, Spritesheet, TextureSource, typ
 import {
   FOG_EXPLORED,
   FOG_UNEXPLORED,
+  biomeAt,
   gameTimeAt,
   hexAt,
   hexEquals,
@@ -39,6 +40,12 @@ const FEET_DY_BUILT = 13;
 /** Distanza tra personaggi fermi sulla stessa casella, e saltello di chi cammina. */
 const CROWD_DX = 10;
 const HOP_MS = 160;
+/**
+ * L'acqua si muove a scatti, uno ogni WATER_TICK_MS: i tile del mare hanno dei fotogrammi
+ * (`_f1`, `_f2`…, vedi art/tiles.px.js). La risacca tiene ogni fotogramma per SURF_HOLD scatti.
+ */
+const WATER_TICK_MS = 200;
+const SURF_HOLD = 2;
 
 export interface MapViewOptions {
   /** Chiamata quando il giocatore tocca un esagono (non quando trascina). */
@@ -79,6 +86,15 @@ interface Reveal {
 
 type CloudState = "covered" | "mist" | "clear";
 
+/** Uno sprite che cambia fotogramma da solo (il mare, la risacca). */
+interface Animated {
+  sprite: Sprite;
+  frames: Texture[];
+  /** Da che fotogramma parte e per quanti scatti tiene ognuno. */
+  phase: number;
+  hold: number;
+}
+
 interface CharacterSprites {
   token: Sprite;
   shadow: Sprite;
@@ -118,6 +134,8 @@ export class MapView {
   private textures = new Map<string, Texture>();
   private variants = new Map<string, Texture[]>();
   private hexes: HexSprites[] = [];
+  private animated: Animated[] = [];
+  private waterTick = -1;
   /** 1 se la casella è sotto le nuvole. */
   private covered = new Uint8Array(0);
   private reveals = new Map<number, Reveal>();
@@ -205,11 +223,13 @@ export class MapView {
       }
     }
     this.zoom = Math.max(1, Math.round(2 * this.dpr));
-    this.ambience = new Ambience(this.ambientGround, this.sky, {
+    const ambienceTextures = {
       bird: [this.texture("bird_0"), this.texture("bird_1")],
       birdShadow: this.texture("bird_shadow"),
       cloudShadows: this.variants.get("cloud_shadow") ?? [],
-    });
+      fish: this.variants.get("fish") ?? [],
+    };
+    this.ambience = new Ambience(this.ambientGround, this.sky, ambienceTextures, this.isOpenWater);
 
     canvas.addEventListener("pointerdown", this.onPointerDown);
     canvas.addEventListener("pointermove", this.onPointerMove);
@@ -235,6 +255,8 @@ export class MapView {
       layer.removeChildren().forEach((child) => child.destroy());
     }
     this.hexes = [];
+    this.animated = [];
+    this.waterTick = -1;
     this.characters.clear();
     this.outposts.clear();
     this.built = new Set([hexKey(map.start), ...map.places.map((p) => hexKey(p.hex))]);
@@ -253,8 +275,15 @@ export class MapView {
       const id = biomeIdOf(map, i);
       const variant = map.variants[i] as number;
 
-      const ground = this.addSprite(this.groundLayer, this.pick(id, variant), x, y + HEX_TOP);
-      const edges = edgeOverlays(map, h).map((name) => this.addSprite(this.edgeLayer, this.texture(name), x, y + HEX_TOP));
+      const groundName = this.variantName(id, variant);
+      const ground = this.addSprite(this.groundLayer, this.texture(groundName), x, y + HEX_TOP);
+      this.animate(ground, groundName, variant, 1);
+      const edges = edgeOverlays(map, h).map((name) => {
+        const edge = this.addSprite(this.edgeLayer, this.texture(name), x, y + HEX_TOP);
+        // La fase cala verso il basso a destra: le onde corrono lungo la costa, col vento.
+        this.animate(edge, name, -Math.floor((x + y) / COL_STEP), SURF_HOLD);
+        return edge;
+      });
       const grid = this.addSprite(this.gridLayer, gridTexture, x, y + HEX_TOP);
       let relief: Sprite | undefined;
       let glow: Sprite | undefined;
@@ -412,12 +441,19 @@ export class MapView {
     this.requestRender();
   }
 
-  /** Uccelli e ombre di nuvole: si possono spegnere (e lo sono se il sistema chiede meno movimento). */
+  /**
+   * Uccelli, ombre di nuvole, pesci e il mare che si muove: si possono spegnere (e lo sono se il
+   * sistema chiede meno movimento); spenti, il mare resta al primo fotogramma.
+   */
   setAmbienceEnabled(enabled: boolean): void {
     this.ambienceEnabled = enabled;
     this.ambientGround.visible = enabled;
     this.sky.visible = enabled;
-    if (!enabled) this.ambience?.clear();
+    if (!enabled) {
+      this.ambience?.clear();
+      for (const a of this.animated) a.sprite.texture = a.frames[0]!;
+      this.waterTick = -1;
+    }
     this.requestRender();
   }
 
@@ -512,11 +548,31 @@ export class MapView {
 
   /** Una delle varianti di un tile, scelta dal numero casuale della casella. */
   private pick(name: string, variant: number): Texture {
-    const list = this.variants.get(name) ?? [];
-    const texture = list[variant % Math.max(1, list.length)];
-    if (!texture) throw new Error(`Manca il tile ${name}`);
-    return texture;
+    return this.texture(this.variantName(name, variant));
   }
+
+  /** Il nome della variante di un tile che tocca alla casella. */
+  private variantName(name: string, variant: number): string {
+    const count = this.variants.get(name)?.length ?? 0;
+    if (count === 0) throw new Error(`Manca il tile ${name}`);
+    return `${name}_${variant % count}`;
+  }
+
+  /** Se il tile ha dei fotogrammi (`_f1`, `_f2`…), lo sprite li farà girare. */
+  private animate(sprite: Sprite, name: string, phase: number, hold: number): void {
+    const frames = [this.texture(name)];
+    for (let k = 1; this.textures.has(`${name}_f${k}`); k++) frames.push(this.texture(`${name}_f${k}`));
+    if (frames.length > 1) this.animated.push({ sprite, frames, phase, hold });
+  }
+
+  /** Acqua scoperta (né sotto le nuvole né fuori mappa) in un punto del mondo: ci saltano i pesci. */
+  private isOpenWater = (x: number, y: number): boolean => {
+    const map = this.map;
+    if (!map) return false;
+    const h = hexAtPoint(x, y);
+    const i = tileIndex(map, h);
+    return i >= 0 && this.covered[i] !== 1 && biomeAt(map, h)?.water === true;
+  };
 
   private addSprite(layer: Container, texture: Texture, x: number, y: number): Sprite {
     const sprite = new Sprite(texture);
@@ -558,6 +614,7 @@ export class MapView {
     if (moving) this.dirty = true;
     const ambient = this.ambienceEnabled && this.ambience !== undefined && this.map !== undefined;
     if (ambient && this.ambience!.step(now, this.viewRect())) this.dirty = true;
+    if (ambient && this.stepWater(now)) this.dirty = true;
     if (this.dirty) {
       this.dirty = false;
       this.app.render();
@@ -629,6 +686,24 @@ export class MapView {
     }
     if (this.ring) this.ring.visible = this.selectedCharacter !== undefined && this.characters.has(this.selectedCharacter);
     return moving;
+  }
+
+  /** A ogni scatto l'acqua sullo schermo passa al fotogramma successivo. */
+  private stepWater(now: number): boolean {
+    const tick = Math.floor(now / WATER_TICK_MS);
+    if (tick === this.waterTick) return false;
+    this.waterTick = tick;
+    let changed = false;
+    for (const a of this.animated) {
+      if (a.sprite.culled) continue;
+      const n = a.frames.length;
+      const texture = a.frames[(((Math.floor(tick / a.hold) + a.phase) % n) + n) % n]!;
+      if (a.sprite.texture !== texture) {
+        a.sprite.texture = texture;
+        changed = true;
+      }
+    }
+    return changed;
   }
 
   /** Le nuvole scoperte scivolano via dal punto di scoperta e svaniscono. */
