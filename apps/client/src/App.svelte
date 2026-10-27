@@ -135,7 +135,7 @@
 
 <div class="map" bind:this={host}></div>
 
-<div class="hud">
+<div class="hud" class:drawer-open={game.drawer !== undefined}>
   <Rail onZoom={(steps) => view?.zoomBy(steps)} />
   {#if game.drawer}
     <Drawer title={i18n.t(DRAWER_TITLES[game.drawer])} onClose={() => (game.drawer = undefined)}>
@@ -209,6 +209,14 @@
 
   .stage :global(> section) {
     z-index: 1;
+  }
+
+  /* Su schermi stretti il pannello aperto copre le risorse: meglio non vederle in trasparenza
+     dietro il suo pulsante di chiusura. */
+  @media (max-width: 720px) {
+    .hud.drawer-open .corner {
+      visibility: hidden;
+    }
   }
 
   .error {
