@@ -1401,63 +1401,23 @@ sprite("char_ring", { w: 16, h: 7 }, (c) => {
   }
 })
 
-// Il percorso: un puntino per casella e una bandierina sulla destinazione.
-sprite("route_dot", `
+// Il percorso: un puntino per casella e una bandierina sulla destinazione, con il contorno scuro
+// perché si vedano sull'erba chiara, sulla sabbia e sopra le case.
+sprite("route_dot", { outline: "k" }, `
   .Z.
   ZYZ
   .Z.`)
 sprite("route_flag", { outline: "k", pivot: "bottom" }, `
-  oYYYy.
-  oYYYYy
-  oYYy..
-  o.....
-  o.....
-  o.....
-  O.....`)
-
-// ---------------------------------------------------------------- interfaccia
-
-// Le icone del menu a sinistra, chiare sul pannello scuro.
-sprite("ui_units", { outline: "k" }, `
-  ......jj..
-  .....jjjj.
-  ..pp.jjjj.
-  .pppp.jj..
-  .pppp.jjj.
-  ..pp.jjjjj
-  .pppp.jjjj
-  pppppp.jjj
-  pppppp.jjj
-  pppppp.jj.`)
-sprite("ui_options", { outline: "k" }, `
-  ....ss....
-  .s.ssss.S.
-  ..ssssSS..
-  .sss..SSS.
-  sss....SSS
-  ssS....SSS
-  .sSS..SSS.
-  ..SSSSSS..
-  .S.SSSS.S.
-  ....SS....`)
-sprite("ui_sun", { w: 13, h: 13 }, (c) => {
-  for (let y = 0; y < 13; y++) for (let x = 0; x < 13; x++) {
-    const d = Math.hypot(x - 6, y - 6)
-    if (d < 3.3) c.px(x, y, x + y < 11 ? "Z" : "y")
-  }
-  for (const [dx, dy] of [[0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1]]) {
-    const r = dx && dy ? 4 : 5
-    c.px(6 + dx * r, 6 + dy * r, "y")
-    if (!(dx && dy)) c.px(6 + dx * (r + 1), 6 + dy * (r + 1), "y")
-  }
-})
-sprite("ui_moon", { w: 13, h: 13 }, (c) => {
-  for (let y = 0; y < 13; y++) for (let x = 0; x < 13; x++) {
-    const inside = Math.hypot(x - 6, y - 6) < 5
-    const bite = Math.hypot(x - 8.5, y - 4) < 4.2
-    if (inside && !bite) c.px(x, y, x < 5 ? "Z" : "Y")
-  }
-})
+  oZy......
+  oYYyyA...
+  oYYYyyAA.
+  oYyyAA...
+  oyA......
+  o........
+  o........
+  o........
+  o........
+  O........`)
 
 // ---------------------------------------------------------------- foglio
 

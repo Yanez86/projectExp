@@ -45,7 +45,7 @@
   "stat.guts": "Fegato",
   "status.idle": "{gender, select, f {Ferma} other {Fermo}}",
   "status.travelling": "In viaggio · arrivo tra {eta}",
-  "action.send": "Manda qui · {eta}",
+  "action.send": "Conferma · {eta}",
   "action.stop": "Fermati",
   "route.unreachable": "Non c'è una strada per arrivarci.",
   "route.here": "È già qui.",
@@ -327,5 +327,7 @@
   "dungeon.emptyLevel": "Livello {level}: vuoto, non c'è niente da trovare",
   "notice.expeditionNothing": "La squadra esce da {place}: i livelli erano già stati ripuliti, non c'era niente da trovare.",
   "notice.expeditionRetreatEmpty": "Le cose si mettono male: la squadra risale da {place} a mani vuote.",
-  "story.originNote": "Si muove bene in: {biome}"
+  "story.originNote": "Si muove bene in: {biome}",
+  "action.go": "Vai",
+  "action.cancel": "Annulla"
 }

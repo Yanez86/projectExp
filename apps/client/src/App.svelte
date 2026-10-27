@@ -48,6 +48,13 @@
     const timer = setInterval(() => game.tick(), TICK_MS);
     const onVisibility = () => (document.hidden ? game.saveNow() : game.tick());
     const onPageHide = () => game.saveNow();
+    // Esc annulla la scelta della destinazione, o chiude la scheda.
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (game.targeting) game.cancelTargeting();
+      else game.clearSelection();
+    };
+    window.addEventListener("keydown", onKey);
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("pagehide", onPageHide);
     return () => {
@@ -55,6 +62,7 @@
       clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("pagehide", onPageHide);
+      window.removeEventListener("keydown", onKey);
       mapView.destroy();
     };
   });

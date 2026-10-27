@@ -97,6 +97,10 @@ Il server andrà in `apps/server/`.
   mappa invece di spingerla; in alto a destra le risorse (`Resources.svelte`); in basso, solo
   quando qualcosa è selezionato, la scheda (`ContextPanel.svelte`) con i comandi. Cosa fa
   un'unità, a parole, sta in `lib/status.ts` e serve sia all'elenco sia alla scheda.
+- Tocchi (`game.tapHex`): senza "Vai" selezionano chi c'è sulla casella (un tocco dopo l'altro si
+  passa al successivo), poi l'edificio, oppure il terreno; la sede apre il suo pannello. Dopo
+  "Vai" (`game.targeting`) il tocco sceglie la destinazione: la mappa disegna percorso e
+  bandierina, la scheda mostra conferma, annulla e le azioni del luogo. Esc annulla.
 - Vista con linea di visuale: per ogni casella entro il raggio si traccia la retta di esagoni dal
   punto di vista; le caselle in mezzo possono fermarla (montagne) o lasciarla passare per poco
   (foreste). Si provano due rette spostate di un soffio da parti opposte: se una è libera, la
@@ -182,8 +186,7 @@ le nuvole coprono ciò che non è stato esplorato.
   per la sede e scarica. Salvataggi alla versione 3.
 - `client`: il modulo del carico nella scheda del carovaniere (`TradeForm.svelte`: prezzi del
   momento, quantità, capienza, conto previsto); nelle schede di cittadine e mercati, le merci
-  cercate o vendute. Con un'unità selezionata, toccare una casella dove ci sono altri ne fa la
-  destinazione; per scegliere un'altra unità c'è l'elenco Unità.
+  cercate o vendute. Le destinazioni si scelgono dopo "Vai" (vedi la mappa, §5).
 
 ## 12. Quinta tappa: mercenari, dungeon, equipaggiamento e paga (fatta)
 

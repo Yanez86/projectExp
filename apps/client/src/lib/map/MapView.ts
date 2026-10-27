@@ -382,7 +382,8 @@ export class MapView {
    */
   setRoute(route: readonly Hex[], destination: Hex | undefined, preview: boolean): void {
     this.routeLayer.removeChildren().forEach((child) => child.destroy());
-    this.routeLayer.alpha = preview ? 0.65 : 1;
+    // L'anteprima appena più tenue del percorso confermato: deve vedersi bene lo stesso.
+    this.routeLayer.alpha = preview ? 0.85 : 1;
     for (const h of route) {
       if (destination && hexEquals(h, destination)) continue;
       const c = hexCenter(h);
@@ -390,7 +391,8 @@ export class MapView {
     }
     if (destination) {
       const c = hexCenter(destination);
-      this.addSprite(this.routeLayer, this.texture("route_flag"), c.x + 2, c.y + 4).anchor.set(0.5, 1);
+      // L'asta piantata a destra del centro, così la bandiera non sparisce dietro un edificio.
+      this.addSprite(this.routeLayer, this.texture("route_flag"), c.x + 5, c.y + 6).anchor.set(0.1, 1);
     }
     this.requestRender();
   }

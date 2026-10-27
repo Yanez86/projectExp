@@ -45,7 +45,7 @@
   "stat.guts": "Guts",
   "status.idle": "Idle",
   "status.travelling": "Travelling · arrives in {eta}",
-  "action.send": "Send here · {eta}",
+  "action.send": "Confirm · {eta}",
   "action.stop": "Stop",
   "route.unreachable": "There's no way there.",
   "route.here": "Already here.",
@@ -327,5 +327,7 @@
   "dungeon.emptyLevel": "Level {level}: empty, nothing to find",
   "notice.expeditionNothing": "The squad comes out of {place}: the levels had already been cleared, there was nothing to find.",
   "notice.expeditionRetreatEmpty": "Things go wrong: the squad climbs back out of {place} empty-handed.",
-  "story.originNote": "Moves well in: {biome}"
+  "story.originNote": "Moves well in: {biome}",
+  "action.go": "Go",
+  "action.cancel": "Cancel"
 }

@@ -79,6 +79,14 @@
     return outpost ? { ...outpost } : undefined;
   });
   let status = $derived(world && character ? unitStatus(world, character, game.now, i18n.t) : undefined);
+  /** Può ricevere un ordine: non sta costruendo, commerciando o in spedizione, e non è ferito. */
+  let canAct = $derived(
+    !!character &&
+      !["building", "trade", "expedition"].includes(character.task?.kind ?? "") &&
+      status?.activity !== "wounded",
+  );
+  /** Sta camminando per conto suo (o per andare a costruire): si può fermare. */
+  let stoppable = $derived(!!character?.destination && (!character.task || character.task.kind === "build"));
   /** Le statistiche con l'equipaggiamento: un ninnolo alza la sua. */
   let effective = $derived(character ? effectiveStats(character) : undefined);
   /** Se il mercenario selezionato può organizzare una spedizione nel dungeon della casella selezionata. */
@@ -175,11 +183,33 @@
         </div>
       {/each}
     </dl>
-    {#if !hexInfo}
+    {#if !game.targeting}
       <EquipmentSection {character} />
       <StorySection {character} />
-    {/if}
-    {#if hexInfo}
+      {#if canAct || stoppable}
+        <div class="actions">
+          {#if canAct}
+            <button type="button" class="primary" onclick={() => game.startTargeting()}>{i18n.t("action.go")}</button>
+          {/if}
+          {#if stoppable}
+            <button type="button" onclick={() => game.stopSelected()}>{i18n.t("action.stop")}</button>
+          {/if}
+        </div>
+      {/if}
+    {:else if !hexInfo}
+      <p class="hint">
+        {#if character.job === "builder"}
+          {i18n.t("hint.build")}
+        {:else if character.job === "caravaneer"}
+          {i18n.t("hint.trade")}
+        {:else if character.job === "mercenary"}
+          {i18n.t("hint.dungeon")}
+        {:else}
+          {i18n.t("hint.send", { gender: character.gender })}
+        {/if}
+      </p>
+      <button type="button" onclick={() => game.cancelTargeting()}>{i18n.t("action.cancel")}</button>
+    {:else}
       <p class="target" class:dim={hexInfo.dim}>
         {#if hexInfo.place}
           {hexInfo.place.name} ({i18n.t(`place.${hexInfo.place.kind}`)}) ·
@@ -211,9 +241,7 @@
       {:else if site}
         <p class="warn">{i18n.t("build.blocked", { reason: i18n.t(`reason.${site.reason}`) })}</p>
       {/if}
-      {#if building || character.task?.kind === "trade" || character.task?.kind === "expedition" || status?.activity === "wounded"}
-        <!-- Sul cantiere, in viaggio per commerciare, in spedizione o ferito, non prende altri ordini. -->
-      {:else if preview === null}
+      {#if preview === null}
         <p class="warn">{i18n.t("route.unreachable")}</p>
       {:else if preview?.here}
         {#if !site?.ok}<p class="hint">{i18n.t("route.here")}</p>{/if}
@@ -222,20 +250,7 @@
           {i18n.t("action.send", { eta: formatDuration(i18n.t, preview.real) })}
         </button>
       {/if}
-    {:else if character.destination && !character.task}
-      <button type="button" onclick={() => game.stopSelected()}>{i18n.t("action.stop")}</button>
-    {:else if !building && !character.task && status?.activity !== "wounded"}
-      <p class="hint">
-        {#if character.job === "builder"}
-          {i18n.t("hint.build")}
-        {:else if character.job === "caravaneer"}
-          {i18n.t("hint.trade")}
-        {:else if character.job === "mercenary"}
-          {i18n.t("hint.dungeon")}
-        {:else}
-          {i18n.t("hint.send", { gender: character.gender })}
-        {/if}
-      </p>
+      <button type="button" onclick={() => game.cancelTargeting()}>{i18n.t("action.cancel")}</button>
     {/if}
   {:else if hexInfo?.place}
     <header>
@@ -379,6 +394,15 @@
     border: 1px solid var(--panel-border);
     border-radius: var(--radius);
     padding: 0 12px;
+  }
+
+  .actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  .actions button {
+    flex: 1;
   }
 
   .close {

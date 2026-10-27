@@ -26,6 +26,11 @@ linee di produzione e vende alle città sparse sulla mappa.
 - Interfaccia: la mappa occupa tutto lo schermo; a sinistra un menu a icone apre i pannelli. Il
   primo è **Unità**: l'elenco delle unità della gilda, con il mestiere e cosa stanno facendo
   (ferme, in viaggio, al lavoro); toccandone una la si seleziona e la si comanda dalla sua scheda.
+- [Deciso] Sulla mappa, toccare qualcosa lo seleziona: un'unità, un edificio (cittadina, mercato,
+  dungeon, avamposto…; la sede apre il suo pannello) o il terreno. Per dare un ordine si preme
+  **Vai** nella scheda dell'unità, si tocca la destinazione, compare la bandierina con il percorso
+  e si conferma (o si annulla). Da lì partono anche fondare un avamposto, commerciare e le
+  spedizioni, secondo il mestiere e il luogo scelto.
   Poi la **Sede** (monete, magazzino, laboratori, avamposti) e le **Opzioni**.
   In alto a destra, in colonna, le risorse della gilda: solo icona e quantità, prima le monete
   e poi le materie che ha in magazzino o che i suoi avamposti e laboratori muovono.

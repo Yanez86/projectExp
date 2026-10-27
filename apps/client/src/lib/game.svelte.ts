@@ -6,6 +6,8 @@ import {
   grantGold,
   hexEquals,
   nextEventAt,
+  outpostAt,
+  placeAt,
   serializeWorld,
   setSpeed,
   skipAhead,
@@ -80,6 +82,8 @@ class Game {
   selectedId = $state<number | undefined>(undefined);
   /** Il pannello aperto dal menu a sinistra, se ce n'è uno. */
   drawer = $state<Drawer | undefined>(undefined);
+  /** Dopo "Vai": il prossimo tocco sulla mappa è la destinazione dell'unità selezionata. */
+  targeting = $state(false);
   /** Una casella su cui centrare la mappa: un oggetto nuovo a ogni richiesta. */
   focus = $state<{ hex: Hex } | undefined>(undefined);
   toasts = $state<Toast[]>([]);
@@ -114,6 +118,7 @@ class Game {
     this.world = world;
     this.selectedHex = undefined;
     this.selectedId = undefined;
+    this.targeting = false;
     this.revealFrom = undefined;
     this.now = Date.now();
     this.version++;
@@ -249,29 +254,60 @@ class Game {
   }
 
   /**
-   * Un tocco sulla mappa. Senza nessuno selezionato: seleziona chi c'è sulla casella, altrimenti
-   * la casella. Con un'unità selezionata la casella diventa la destinazione, anche se ci sono
-   * altri; toccando la casella dove sta l'unità si passa a chi le sta accanto, se c'è qualcuno.
+   * Un tocco sulla mappa. Dopo "Vai" sceglie la destinazione dell'unità selezionata. Altrimenti
+   * seleziona quello che c'è sulla casella: chi ci sta (un tocco dopo l'altro si passa al
+   * successivo), poi l'edificio, oppure il terreno. Toccare la sede apre il suo pannello.
    */
   tapHex(hex: Hex): void {
     const world = this.world;
     if (!world) return;
-    const gameNow = gameTimeAt(world.state.clock, Date.now());
-    const here = world.state.characters.filter((c) => hexEquals(currentHex(c, gameNow), hex));
-    const selected = here.findIndex((c) => c.id === this.selectedId);
-    if (here.length > 0 && (this.selectedId === undefined || (selected >= 0 && here.length > 1))) {
-      // Più personaggi sulla stessa casella: ogni tocco passa al successivo.
-      this.selectedId = here[(selected + 1) % here.length]!.id;
-      this.selectedHex = undefined;
+    if (this.targeting && this.selectedId !== undefined) {
+      this.selectedHex = hex;
       return;
     }
-    this.selectedHex = hex;
+    const { state, map } = world;
+    const gameNow = gameTimeAt(state.clock, Date.now());
+    const choices: (number | "hex")[] = state.characters.filter((c) => hexEquals(currentHex(c, gameNow), hex)).map((c) => c.id);
+    const guild = hexEquals(hex, state.guild.hex);
+    const building = guild || placeAt(map, hex) !== undefined || outpostAt(state, hex) !== undefined;
+    if (building || choices.length === 0) choices.push("hex");
+    const current =
+      this.selectedId !== undefined
+        ? choices.indexOf(this.selectedId)
+        : this.selectedHex && hexEquals(this.selectedHex, hex)
+          ? choices.indexOf("hex")
+          : -1;
+    const next = choices[(current + 1) % choices.length]!;
+    this.targeting = false;
+    if (next !== "hex") {
+      this.selectedId = next;
+      this.selectedHex = undefined;
+    } else if (guild) {
+      this.clearSelection();
+      this.drawer = "guild";
+    } else {
+      this.selectedId = undefined;
+      this.selectedHex = hex;
+    }
+  }
+
+  /** "Vai": il prossimo tocco sulla mappa sceglie dove mandare l'unità selezionata. */
+  startTargeting(): void {
+    if (this.selectedId === undefined) return;
+    this.targeting = true;
+    this.selectedHex = undefined;
+  }
+
+  cancelTargeting(): void {
+    this.targeting = false;
+    this.selectedHex = undefined;
   }
 
   /** Seleziona un personaggio; con `focus`, la mappa si centra su di lui. */
   selectCharacter(id: number, focus = false): void {
     this.selectedId = id;
     this.selectedHex = undefined;
+    this.targeting = false;
     const world = this.world;
     const c = world?.state.characters.find((x) => x.id === id);
     if (focus && world && c) this.focus = { hex: currentHex(c, gameTimeAt(world.state.clock, Date.now())) };
@@ -280,6 +316,7 @@ class Game {
   clearSelection(): void {
     this.selectedId = undefined;
     this.selectedHex = undefined;
+    this.targeting = false;
   }
 
   /** Apre un pannello del menu, o lo chiude se è già aperto. */
@@ -292,7 +329,7 @@ class Game {
     const target = this.selectedHex;
     if (!target || this.selectedId === undefined) return undefined;
     const result = this.command({ kind: "move", characterId: this.selectedId, target });
-    if (result?.ok) this.selectedHex = undefined;
+    if (result?.ok) this.cancelTargeting();
     return result;
   }
 
@@ -306,7 +343,7 @@ class Game {
     const target = this.selectedHex;
     if (!target || this.selectedId === undefined) return undefined;
     const result = this.command({ kind: "build_outpost", characterId: this.selectedId, target });
-    if (result?.ok) this.selectedHex = undefined;
+    if (result?.ok) this.cancelTargeting();
     return result;
   }
 
@@ -318,7 +355,7 @@ class Game {
   trade(placeId: number, mode: "sell" | "buy", goods: [MaterialId, number][]): CommandResult | undefined {
     if (this.selectedId === undefined) return undefined;
     const result = this.command({ kind: "trade", characterId: this.selectedId, placeId, mode, goods });
-    if (result?.ok) this.selectedHex = undefined;
+    if (result?.ok) this.cancelTargeting();
     return result;
   }
 
@@ -347,7 +384,7 @@ class Game {
   /** Manda una squadra di mercenari nel dungeon, fino al livello `depth`. */
   expedition(placeId: number, members: number[], depth: number): CommandResult | undefined {
     const result = this.command({ kind: "expedition", placeId, members, depth });
-    if (result?.ok) this.selectedHex = undefined;
+    if (result?.ok) this.cancelTargeting();
     return result;
   }
 
